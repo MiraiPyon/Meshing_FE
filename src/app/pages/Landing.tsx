@@ -1,25 +1,23 @@
-import { motion } from "motion/react";
+import { useRef, type MouseEvent } from "react";
+import { motion, type Variants } from "motion/react";
 import { Link } from "react-router";
 import {
   ArrowRight,
-  Layers,
-  Box,
-  BarChart3,
-  Triangle,
   Hexagon,
   Component,
   GitCommitHorizontal,
   Cpu,
 } from "lucide-react";
+import hcmutLogo from "../HCMUT.png";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
   },
-};
+} satisfies Variants;
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -27,55 +25,71 @@ const stagger = {
     opacity: 1,
     transition: { staggerChildren: 0.1 },
   },
-};
+} satisfies Variants;
 
 export function Landing() {
+  const architectureRef = useRef<HTMLElement | null>(null);
+
+  const handleArchitectureClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    const architectureSection = architectureRef.current;
+    if (!architectureSection) {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const stickyNavOffset = 112;
+    const architectureTop =
+      window.scrollY +
+      architectureSection.getBoundingClientRect().top -
+      stickyNavOffset;
+
+    window.scrollTo({
+      top: architectureTop,
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#030303] text-zinc-200 overflow-hidden font-sans selection:bg-blue-500/30">
-      {/* Background Effects */}
+    <div className="min-h-screen overflow-hidden bg-[#030303] font-sans text-zinc-200 selection:bg-blue-500/30">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]"></div>
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute left-[-10%] top-[-20%] h-[50%] w-[50%] rounded-full bg-blue-600/10 blur-[120px]"></div>
+        <div className="absolute right-[-10%] top-[20%] h-[40%] w-[40%] rounded-full bg-indigo-600/10 blur-[120px]"></div>
       </div>
 
-      {/* Navbar */}
-      <nav className="border-b border-white/5 bg-[#030303]/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#030303]/50 backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex h-20 items-center justify-between">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-3"
+              className="flex items-center gap-3"
             >
+              <img
+                src={hcmutLogo}
+                alt="HCMUT logo"
+                className="h-[4.125rem] w-[4.125rem] rounded-full object-cover"
+              />
               <span className="text-xl font-bold tracking-tight text-white">
                 Nhóm 3
               </span>
             </motion.div>
+
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-6"
+              className="flex items-center"
             >
               <Link
                 to="/login"
-                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-              ></Link>
-              <Link
-                to="/login"
-                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)]"
               >
-                Đăng Nhập
-              </Link>
-              <Link
-                to="/login"
-                className="relative group px-5 py-2.5 text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
-              >
-                <span className="relative z-10 flex items-center">
-                  Đăng Ký{" "}
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg blur-xl -z-10"></div>
+                <span className="leading-none">Đăng Nhập</span>
+                <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>
           </div>
@@ -83,44 +97,43 @@ export function Landing() {
       </nav>
 
       <main className="relative z-10">
-        {/* Hero Section */}
-        <div className="relative pt-32 pb-24 lg:pt-48 lg:pb-32">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+        <div className="relative pb-32 pt-32 lg:pb-40 lg:pt-48">
+          <div className="mx-auto max-w-7xl px-6 text-center lg:px-8">
             <motion.div
               initial="hidden"
               animate="visible"
               variants={stagger}
-              className="max-w-4xl mx-auto"
+              className="mx-auto max-w-4xl"
             >
               <motion.h1
                 variants={fadeIn}
-                className="text-6xl md:text-7xl font-bold tracking-tighter text-white mb-8 leading-[1.1]"
+                className="mb-8 text-6xl font-bold leading-[1.1] tracking-tighter text-white md:text-7xl"
               >
                 Đồ Án Thực Tập Đa Ngành
-                <br />
               </motion.h1>
 
               <motion.p
                 variants={fadeIn}
-                className="text-xl text-zinc-400 mb-12 max-w-5xl mx-auto leading-relaxed"
+                className="mx-auto mb-12 max-w-5xl text-xl leading-relaxed text-zinc-400"
               >
-                Nguyễn Nhật Quang - Tô Nguyên Khoa - Từ Bá Lộc -
-                Huỳnh Hoàng Tuấn - Nguyễn Tăng Trung
+                Nguyễn Nhật Quang - Tô Nguyên Khoa - Từ Bá Lộc - Huỳnh Hoàng
+                Tuấn - Nguyễn Tăng Trung
               </motion.p>
 
               <motion.div
                 variants={fadeIn}
-                className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6"
+                className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0"
               >
                 <Link
                   to="/login"
-                  className="w-full sm:w-auto px-8 py-4 text-base font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] border border-blue-500/50"
+                  className="w-full rounded-xl border border-blue-500/50 bg-blue-600 px-8 py-4 text-base font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:bg-blue-500 hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] sm:w-auto"
                 >
                   Khám Phá
                 </Link>
                 <a
                   href="#architecture"
-                  className="w-full sm:w-auto px-8 py-4 text-base font-medium text-zinc-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all flex items-center justify-center"
+                  onClick={handleArchitectureClick}
+                  className="w-full rounded-xl border border-purple-500/50 bg-purple-600 px-8 py-4 text-base font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:bg-purple-500 hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] sm:w-auto"
                 >
                   System Architecture
                 </a>
@@ -129,63 +142,56 @@ export function Landing() {
           </div>
         </div>
 
-        {/* Feature Highlights */}
-        <div
-          className="py-24 bg-[#050505] relative border-t border-white/5"
+        <section
           id="architecture"
+          ref={architectureRef}
+          className="relative scroll-mt-28 border-t border-white/5 bg-[#050505] pb-24 pt-28"
         >
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="mb-20"
             >
-              <h2 className="text-3xl font-bold text-white mb-4">
+              <h2 className="mb-4 text-3xl font-bold text-white">
                 System Architecture
               </h2>
-              <p className="text-zinc-400 max-w-2xl text-lg">
-                Hệ thống tích hợp quy trình xử lý hình học chuẩn
-                hóa PSLG, tự động phân loại biên và tối ưu hóa
-                lưới qua thuật toán Delaunay Refinement. Công cụ
-                đảm bảo chất lượng phần tử với ngưỡng góc min
-                lớn hơn 20.7 độ và kiểm soát sai số rời rạc chặt
-                chẽ, mang lại mô hình tính toán ổn định và có độ
-                tin cậy cao.
+              <p className="max-w-2xl text-lg text-zinc-400">
+                Hệ thống mô phỏng quy trình chuẩn hóa PSLG, sinh lưới
+                Delaunay Refinement và trực quan hóa các chỉ số chất lượng
+                lưới để phục vụ phân tích.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Card 1 */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <motion.div
                 whileHover={{ y: -5 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/10 hover:border-blue-500/50 transition-colors"
+                className="group relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-8 transition-colors hover:border-blue-500/50"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20">
-                    <Component className="w-6 h-6 text-blue-400" />
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
+                    <Component className="h-6 w-6 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
+                  <h3 className="mb-3 text-xl font-semibold text-white">
                     Geometric Modeling
                   </h3>
-                  <p className="text-zinc-400 mb-6 leading-relaxed text-sm">
-                    Các định nghĩa biên được ánh xạ trực tiếp
-                    sang cấu trúc PSLG. Hệ thống tự động loại bỏ
-                    các điểm trùng lặp và nhận diện chính xác
-                    các vòng lặp biên trong/ngoài (CCW/CW).
+                  <p className="mb-6 text-sm leading-relaxed text-zinc-400">
+                    Chuyển biên hình học sang cấu trúc PSLG, gom nút topo và
+                    nhận diện chính xác vòng ngoài, vòng lỗ trước khi sinh lưới.
                   </p>
                   <ul className="space-y-3">
                     {[
-                      "Theo dõi biên ngoài (CCW) và biên trong (CW)",
-                      "Kiểm tra giao cắt giữa các biên phụ",
-                      "Hợp nhất nút topo (Topological node merging)",
-                    ].map((item, i) => (
+                      "Theo dõi biên ngoài CCW và lỗ CW",
+                      "Kiểm tra giao cắt giữa các đoạn biên",
+                      "Hợp nhất nút topo trùng nhau",
+                    ].map((item) => (
                       <li
-                        key={i}
+                        key={item}
                         className="flex items-center text-sm text-zinc-500"
                       >
-                        <Hexagon className="w-4 h-4 mr-3 text-blue-500/50" />{" "}
+                        <Hexagon className="mr-3 h-4 w-4 text-blue-500/50" />
                         {item}
                       </li>
                     ))}
@@ -193,37 +199,33 @@ export function Landing() {
                 </div>
               </motion.div>
 
-              {/* Card 2 */}
               <motion.div
                 whileHover={{ y: -5 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/10 hover:border-indigo-500/50 transition-colors"
+                className="group relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-8 transition-colors hover:border-indigo-500/50"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 border border-indigo-500/20">
-                    <GitCommitHorizontal className="w-6 h-6 text-indigo-400" />
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-500/20 bg-indigo-500/10">
+                    <GitCommitHorizontal className="h-6 w-6 text-indigo-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
+                  <h3 className="mb-3 text-xl font-semibold text-white">
                     Delaunay Engine
                   </h3>
-                  <p className="text-zinc-400 mb-6 leading-relaxed text-sm">
-                    Khởi tạo lưới bằng thuật toán
-                    Divide-and-Conquer với các ràng buộc tinh
-                    chỉnh thời gian thực. Đảm bảo góc tối thiểu
-                    và tỷ lệ bán kính đường tròn ngoại tiếp tối
-                    ưu.
+                  <p className="mb-6 text-sm leading-relaxed text-zinc-400">
+                    Sinh lưới bằng Delaunay Refinement với các ràng buộc về góc
+                    tối thiểu, tỉ lệ bán kính ngoại tiếp và độ dài cạnh cực đại.
                   </p>
                   <ul className="space-y-3">
                     {[
-                      "Loại bỏ phần tử mảnh (θ > 20.7°)",
-                      "Chia nhỏ các cạnh bị xâm phạm",
-                      "Xác thực biên bằng thuật toán Cast Ray",
-                    ].map((item, i) => (
+                      "Loại bỏ phần tử mảnh với góc quá nhỏ",
+                      "Chia nhỏ các cạnh vi phạm ràng buộc",
+                      "Kiểm tra miền bằng ray casting",
+                    ].map((item) => (
                       <li
-                        key={i}
+                        key={item}
                         className="flex items-center text-sm text-zinc-500"
                       >
-                        <Hexagon className="w-4 h-4 mr-3 text-indigo-500/50" />{" "}
+                        <Hexagon className="mr-3 h-4 w-4 text-indigo-500/50" />
                         {item}
                       </li>
                     ))}
@@ -231,35 +233,33 @@ export function Landing() {
                 </div>
               </motion.div>
 
-              {/* Card 3 */}
               <motion.div
                 whileHover={{ y: -5 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/10 hover:border-purple-500/50 transition-colors"
+                className="group relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-8 transition-colors hover:border-purple-500/50"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 border border-purple-500/20">
-                    <Cpu className="w-6 h-6 text-purple-400" />
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10">
+                    <Cpu className="h-6 w-6 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
+                  <h3 className="mb-3 text-xl font-semibold text-white">
                     Analysis Dashboard
                   </h3>
-                  <p className="text-zinc-400 mb-6 leading-relaxed text-sm">
-                    Trực quan hóa dữ liệu lưới và phân tích lỗi
-                    theo thời gian thực. Tích hợp các bộ lọc và
-                    công cụ theo dõi thuộc tính phần tử lưới.
+                  <p className="mb-6 text-sm leading-relaxed text-zinc-400">
+                    Trực quan hóa dữ liệu lưới, chất lượng phần tử và các thống
+                    kê phục vụ kiểm thử, tối ưu và đánh giá mô hình.
                   </p>
                   <ul className="space-y-3">
                     {[
-                      "Tính toán Bậc tự do (DOF) (T3/Q4 nodes)",
-                      "Phân bổ sai số rời rạc",
-                      "Phân tích phân bố kích thước phần tử",
-                    ].map((item, i) => (
+                      "Tính số bậc tự do cho T3 và Q4",
+                      "Phân bố sai số rời rạc",
+                      "Phân tích kích thước phần tử",
+                    ].map((item) => (
                       <li
-                        key={i}
+                        key={item}
                         className="flex items-center text-sm text-zinc-500"
                       >
-                        <Hexagon className="w-4 h-4 mr-3 text-purple-500/50" />{" "}
+                        <Hexagon className="mr-3 h-4 w-4 text-purple-500/50" />
                         {item}
                       </li>
                     ))}
@@ -268,18 +268,15 @@ export function Landing() {
               </motion.div>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 bg-[#030303] py-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <span className="text-zinc-500 font-medium">
-              Nhóm 3
-            </span>
+      <footer className="relative z-10 border-t border-white/5 bg-[#030303] py-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between px-6 lg:flex-row lg:px-8">
+          <div className="mb-4 flex items-center space-x-2 lg:mb-0">
+            <span className="font-medium text-zinc-500">Nhóm 3</span>
           </div>
-          <p className="text-zinc-600 text-sm">
+          <p className="text-sm text-zinc-600">
             Nhóm 3 &copy; {new Date().getFullYear()}
           </p>
         </div>
@@ -287,4 +284,3 @@ export function Landing() {
     </div>
   );
 }
-
