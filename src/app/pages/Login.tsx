@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowLeft, ArrowRight, Triangle } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { isAuthenticated } from "../lib/auth";
+import hcmutLogo from "../HCMUT.png";
 
 const GOOGLE_CLIENT_ID = "281714396823-ouc85peol850htcsr2rci0iahsjec9sl.apps.googleusercontent.com";
 const GOOGLE_REDIRECT_URI = "http://localhost:5173/auth/callback";
@@ -76,14 +77,18 @@ export function Login() {
 
         <div className="relative z-10 mt-auto p-12">
           <div className="mb-6 flex items-center gap-3 text-white">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
-              <Triangle className="h-5 w-5 text-blue-400" fill="currentColor" />
+            <div>
+              <img
+                src={hcmutLogo}
+                alt="HCMUT logo"
+                className="h-[54px] w-[54px] object-cover"
+              />
             </div>
-            <span className="text-xl font-semibold tracking-tight">Nhom 3</span>
+            <span className="text-xl font-semibold tracking-tight">Nhóm 3</span>
           </div>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white">Google Sign-In for the drawing workspace</h1>
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white">Đồ Án Thực Tập Đa Ngành</h1>
           <p className="max-w-md text-lg text-zinc-400">
-            Dang nhap bang tai khoan Google de quay lai bang ve va tiep tuc thao tac tren canvas.
+            Nguyễn Nhật Quang - Tô Nguyên Khoa - Từ Bá Lộc - Huỳnh Hoàng Tuấn - Nguyễn Tăng Trung
           </p>
         </div>
       </div>
@@ -91,10 +96,10 @@ export function Login() {
       <div className="relative z-10 flex w-full items-center justify-center bg-[#030303] p-8 sm:p-12 lg:w-1/2">
         <Link
           to="/"
-          className="group absolute left-8 top-8 flex items-center text-sm font-medium text-zinc-500 transition-colors hover:text-white"
+          className="group absolute left-8 top-8 z-20 inline-flex items-center justify-center gap-2 rounded-xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)] sm:left-12 sm:top-12"
         >
           <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Quay lai trang chu
+          Quay lại trang chủ
         </Link>
 
         <motion.div
@@ -104,28 +109,20 @@ export function Login() {
           className="w-full max-w-md space-y-8"
         >
           <div>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.3em] text-zinc-500">Authentication</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-white">Dang nhap</h2>
+            <h2 className="text-3xl font-semibold tracking-tight text-white">Đăng nhập</h2>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
-              Nhan vao nut ben duoi de dang nhap voi Google. Sau khi xac thuc thanh cong, nguoi dung se duoc dua tro lai man hinh bang ve.
+              Click vào nút bên dưới để đăng nhập bằng tài khoản Google. Sau khi xácc thực thành công, bạn sẽ được chuyển hướng đến Workspace!
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
-            <a
-              href={GOOGLE_SIGN_IN_URL}
-              className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white px-4 py-4 text-sm font-semibold text-zinc-900 transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(255,255,255,0.12)]"
-            >
-              <GoogleIcon />
-              <span>Sign in with Google</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </a>
-
-            <div className="mt-6 rounded-2xl border border-blue-500/15 bg-blue-500/10 p-4 text-sm text-zinc-300">
-              Redirect hien tai dang tro toi
-              <span className="ml-1 font-mono text-blue-300">http://localhost:5173/auth/callback</span>.
-            </div>
-          </div>
+          <a
+            href={GOOGLE_SIGN_IN_URL}
+            className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)] sm:left-12 sm:top-12"
+          >
+            <GoogleIcon />
+            <span>Sign in with Google</span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </a>
         </motion.div>
       </div>
     </div>
