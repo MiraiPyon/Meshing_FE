@@ -1,4 +1,4 @@
-import { useRef, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { motion, type Variants } from "motion/react";
 import { Link } from "react-router";
 import {
@@ -7,8 +7,24 @@ import {
   Component,
   GitCommitHorizontal,
   Cpu,
+  CircleUserRound,
+  LogOut,
 } from "lucide-react";
 import hcmutLogo from "../HCMUT.png";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import {
+  clearAuthentication,
+  getAuthProfile,
+  isAuthenticated,
+  type AuthProfile,
+} from "../lib/auth";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -29,6 +45,25 @@ const stagger = {
 
 export function Landing() {
   const architectureRef = useRef<HTMLElement | null>(null);
+  const [authenticated, setAuthenticated] = useState(() => isAuthenticated());
+  const [profile, setProfile] = useState<AuthProfile | null>(() =>
+    getAuthProfile(),
+  );
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      setAuthenticated(isAuthenticated());
+      setProfile(getAuthProfile());
+    };
+
+    window.addEventListener("storage", syncAuthState);
+    window.addEventListener("focus", syncAuthState);
+
+    return () => {
+      window.removeEventListener("storage", syncAuthState);
+      window.removeEventListener("focus", syncAuthState);
+    };
+  }, []);
 
   const handleArchitectureClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -51,6 +86,12 @@ export function Landing() {
       top: architectureTop,
       behavior: prefersReducedMotion ? "auto" : "smooth",
     });
+  };
+
+  const handleLogout = () => {
+    clearAuthentication();
+    setAuthenticated(false);
+    setProfile(null);
   };
 
   return (
@@ -84,13 +125,49 @@ export function Landing() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center"
             >
-              <Link
-                to="/login"
-                className="group inline-flex items-center justify-center gap-2 rounded-xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)]"
-              >
-                <span className="leading-none">Đăng Nhập</span>
-                <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
-              </Link>
+              {authenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Open user menu"
+                      className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-zinc-100 transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:border-purple-400/60 hover:bg-purple-500 hover:text-white hover:shadow-[0_0_40px_rgba(37,99,235,0.5)]"
+                    >
+                      <CircleUserRound className="h-6 w-6" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 border-white/10 bg-[#111111]/95 p-2 text-zinc-200 backdrop-blur-xl"
+                  >
+                    <DropdownMenuLabel className="px-3 py-2">
+                      <div className="text-sm font-semibold text-white">
+                        {profile?.name ?? "Người dùng Google"}
+                      </div>
+                      <div className="text-xs text-zinc-400">
+                        {profile?.email ?? "Đã đăng nhập"}
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem
+                      onSelect={handleLogout}
+                      className="group cursor-pointer rounded-lg px-3 py-2 font-semibold text-red-400 transition-all hover:bg-red-500/10 hover:text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                    >
+                      <LogOut className="h-4 w-4 text-sm font-semibold transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-rotate-6 group-focus:translate-x-0.5 group-focus:-rotate-6" />
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+              {!authenticated ? (
+                <Link
+                  to="/login"
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)]"
+                >
+                  <span className="leading-none">Đăng Nhập</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
+                </Link>
+              ) : null}
             </motion.div>
           </div>
         </div>
@@ -125,7 +202,7 @@ export function Landing() {
                 className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0"
               >
                 <Link
-                  to="/login"
+                  to={authenticated ? "/dashboard" : "/login"}
                   className="w-full rounded-xl border border-blue-500/50 bg-blue-600 px-8 py-4 text-base font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:bg-blue-500 hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] sm:w-auto"
                 >
                   Khám Phá
