@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
-import { isAuthenticated } from "../lib/auth";
+import { isAuthenticated } from "../../infrastructure/auth/local-storage-auth";
 import hcmutLogo from "../HCMUT.png";
 
 const GOOGLE_CLIENT_ID = "281714396823-ouc85peol850htcsr2rci0iahsjec9sl.apps.googleusercontent.com";

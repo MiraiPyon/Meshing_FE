@@ -19,12 +19,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import { LogoutConfirmDialog } from "../components/auth/LogoutConfirmDialog";
 import {
   clearAuthentication,
   getAuthProfile,
   isAuthenticated,
   type AuthProfile,
-} from "../lib/auth";
+} from "../../infrastructure/auth/local-storage-auth";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -46,6 +47,7 @@ const stagger = {
 export function Landing() {
   const architectureRef = useRef<HTMLElement | null>(null);
   const [authenticated, setAuthenticated] = useState(() => isAuthenticated());
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [profile, setProfile] = useState<AuthProfile | null>(() =>
     getAuthProfile(),
   );
@@ -150,7 +152,7 @@ export function Landing() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-white/10" />
                     <DropdownMenuItem
-                      onSelect={handleLogout}
+                      onSelect={() => setLogoutDialogOpen(true)}
                       className="group cursor-pointer rounded-lg px-3 py-2 font-semibold text-red-400 transition-all hover:bg-red-500/10 hover:text-red-400 focus:bg-red-500/10 focus:text-red-400"
                     >
                       <LogOut className="h-4 w-4 text-sm font-semibold transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-rotate-6 group-focus:translate-x-0.5 group-focus:-rotate-6" />
@@ -358,6 +360,12 @@ export function Landing() {
           </p>
         </div>
       </footer>
+
+      <LogoutConfirmDialog
+        open={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 }
