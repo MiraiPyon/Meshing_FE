@@ -1,31 +1,66 @@
-import { createElement } from "react";
+import { Suspense, createElement, lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
-import { Landing } from "./pages/Landing";
-import { Dashboard } from "./pages/Dashboard";
-import { Login } from "./pages/Login";
-import { AuthCallback } from "./pages/AuthCallback";
-import { isAuthenticated } from "./lib/auth";
+import { RouteLoadingScreen } from "./components/layout/RouteLoadingScreen";
+import { isAuthenticated } from "../infrastructure/auth/local-storage-auth";
+
+function withPageLoader(Page: LazyExoticComponent<ComponentType>) {
+  return function LazyPageRoute() {
+    return createElement(
+      Suspense,
+      { fallback: createElement(RouteLoadingScreen) },
+      createElement(Page),
+    );
+  };
+}
+
+const LandingRoute = withPageLoader(
+  lazy(async () => {
+    const module = await import("./pages/Landing");
+    return { default: module.Landing };
+  }),
+);
+
+const LoginRoute = withPageLoader(
+  lazy(async () => {
+    const module = await import("./pages/Login");
+    return { default: module.Login };
+  }),
+);
+
+const AuthCallbackRoute = withPageLoader(
+  lazy(async () => {
+    const module = await import("./pages/AuthCallback");
+    return { default: module.AuthCallback };
+  }),
+);
+
+const DashboardRoute = withPageLoader(
+  lazy(async () => {
+    const module = await import("./pages/Dashboard");
+    return { default: module.Dashboard };
+  }),
+);
 
 function DashboardGate() {
   if (!isAuthenticated()) {
     return createElement(Navigate, { replace: true, to: "/login" });
   }
 
-  return createElement(Dashboard);
+  return createElement(DashboardRoute);
 }
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: Landing,
+    Component: LandingRoute,
   },
   {
     path: "/login",
-    Component: Login,
+    Component: LoginRoute,
   },
   {
     path: "/auth/callback",
-    Component: AuthCallback,
+    Component: AuthCallbackRoute,
   },
   {
     path: "/dashboard",

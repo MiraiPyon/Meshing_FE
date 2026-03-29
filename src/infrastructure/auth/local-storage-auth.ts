@@ -55,7 +55,6 @@ export function getAuthProfile() {
   }
 
   const rawProfile = window.localStorage.getItem(AUTH_PROFILE_KEY);
-
   if (!rawProfile) {
     return null;
   }
@@ -67,7 +66,9 @@ export function getAuthProfile() {
   }
 }
 
-export function createAuthProfileFromParams(searchParams: URLSearchParams): AuthProfile {
+export function createAuthProfileFromParams(
+  searchParams: URLSearchParams,
+): AuthProfile {
   const email = searchParams.get("email") ?? undefined;
   const name =
     searchParams.get("name") ??
@@ -76,7 +77,8 @@ export function createAuthProfileFromParams(searchParams: URLSearchParams): Auth
     (email ? email.split("@")[0] : undefined) ??
     "Nguoi dung Google";
 
-  const avatar = searchParams.get("picture") ?? searchParams.get("avatar") ?? undefined;
+  const avatar =
+    searchParams.get("picture") ?? searchParams.get("avatar") ?? undefined;
 
   return {
     avatar,

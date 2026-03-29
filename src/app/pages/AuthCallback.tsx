@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { LoaderCircle } from "lucide-react";
-import { createAuthProfileFromParams, hasOAuthSuccessParams, markAuthenticated, storeAuthProfile } from "../lib/auth";
+import {
+  createAuthProfileFromParams,
+  hasOAuthSuccessParams,
+  markAuthenticated,
+  storeAuthProfile,
+} from "../../infrastructure/auth/local-storage-auth";
 
 export function AuthCallback() {
   const navigate = useNavigate();
