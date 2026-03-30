@@ -21,8 +21,6 @@ Project này được xây dựng như một giao diện frontend cho quy trình
 5. Hệ thống sinh preview mesh để người dùng quan sát nhanh cấu trúc lưới.
 6. Dashboard hiển thị các chỉ số phân tích và biểu đồ phân bố để phục vụ đánh giá sơ bộ.
 
-README này mô tả đúng trạng thái hiện tại của codebase. Đây là frontend demo/preview, chưa phải một mesher FEM hoàn chỉnh cho môi trường production.
-
 ## 2. Tính năng hiện có
 
 - Landing page giới thiệu hệ thống và điều hướng đến phần đăng nhập hoặc workspace.
@@ -287,9 +285,3 @@ Nếu muốn nâng cấp project, đây là các hướng nên ưu tiên:
 - Bổ sung export dữ liệu mesh và hình học.
 - Viết unit test cho `domain services`, `use cases` và reducer/state machine.
 - Thêm linting và CI cơ bản.
-
-## 15. Ghi chú
-
-- Project hiện là frontend-only.
-- Không có API backend trong repo này.
-- README được viết lại theo trạng thái code hiện tại để phục vụ phát triển, review code và báo cáo đồ án.
