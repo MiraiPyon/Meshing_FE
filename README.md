@@ -10,6 +10,10 @@ Project tập trung vào trải nghiệm tương tác trên trình duyệt:
 - Hiển thị thống kê như số node, số cạnh, số phần tử ước lượng và DOF.
 - Tổ chức mã nguồn theo hướng tách `app`, `application`, `domain`, `infrastructure`.
 
+## Tài liệu
+
+- [Tài liệu CI/CD](./CI_CD.md)
+
 ## 1. Mục tiêu project
 
 Project này được xây dựng như một giao diện frontend cho quy trình làm việc sau:
@@ -20,6 +24,8 @@ Project này được xây dựng như một giao diện frontend cho quy trình
 4. Hệ thống chuẩn hóa dữ liệu hình học và kiểm tra điều kiện tối thiểu.
 5. Hệ thống sinh preview mesh để người dùng quan sát nhanh cấu trúc lưới.
 6. Dashboard hiển thị các chỉ số phân tích và biểu đồ phân bố để phục vụ đánh giá sơ bộ.
+
+README này mô tả đúng trạng thái hiện tại của codebase. Đây là frontend demo/preview, chưa phải một mesher FEM hoàn chỉnh cho môi trường production.
 
 ## 2. Tính năng hiện có
 
@@ -164,6 +170,9 @@ Output build sẽ được tạo trong thư mục `dist/`.
 ```bash
 npm run dev
 npm run build
+npm run typecheck
+npm run build:pages
+npm run ci:check
 ```
 
 Hiện tại project chưa cấu hình script riêng cho:
@@ -176,18 +185,19 @@ Hiện tại project chưa cấu hình script riêng cho:
 
 Flow đăng nhập hiện nằm hoàn toàn ở frontend.
 
-Hai hằng số quan trọng được khai báo trực tiếp trong:
+Các biến môi trường liên quan được mô tả trong:
 
 ```text
-src/app/pages/Login.tsx
+.env.example
 ```
 
-Giá trị hiện có:
+Giá trị đang được hỗ trợ:
 
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_REDIRECT_URI`
+- `VITE_GOOGLE_CLIENT_ID`
+- `VITE_GOOGLE_REDIRECT_URI`
+- `VITE_BASE_PATH`
 
-Khi đổi môi trường chạy hoặc deploy sang domain khác, cần cập nhật lại `GOOGLE_REDIRECT_URI` cho khớp với URL callback thực tế.
+Khi đổi môi trường chạy hoặc deploy sang domain khác, cần cập nhật lại callback URL cho khớp với URL thực tế.
 
 Lưu ý quan trọng:
 
