@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "build:pages": "vite build && node ./scripts/prepare-pages.mjs",
+    "ci:check": "npm run typecheck && npm run build",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -67,6 +70,7 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@types/node": "24.6.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@tailwindcss/vite": "4.1.12",

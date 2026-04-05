@@ -3,6 +3,16 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { RouteLoadingScreen } from "./components/layout/RouteLoadingScreen";
 import { isAuthenticated } from "../infrastructure/auth/local-storage-auth";
 
+function getRouterBasename() {
+  const baseUrl = import.meta.env.BASE_URL;
+
+  if (baseUrl === "/") {
+    return baseUrl;
+  }
+
+  return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
+
 function withPageLoader(Page: LazyExoticComponent<ComponentType>) {
   return function LazyPageRoute() {
     return createElement(
@@ -66,4 +76,6 @@ export const router = createBrowserRouter([
     path: "/dashboard",
     Component: DashboardGate,
   },
-]);
+], {
+  basename: getRouterBasename(),
+});
