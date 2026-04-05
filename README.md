@@ -285,3 +285,52 @@ Nếu muốn nâng cấp project, đây là các hướng nên ưu tiên:
 - Bổ sung export dữ liệu mesh và hình học.
 - Viết unit test cho `domain services`, `use cases` và reducer/state machine.
 - Thêm linting và CI cơ bản.
+
+## 15. CI/CD
+
+Project hiện đã có CI/CD bằng GitHub Actions:
+
+- `CI`: chạy khi mở `pull request` và khi push lên `main`.
+- `CD`: tự build và deploy lên GitHub Pages khi merge vào `main`.
+
+Các file workflow:
+
+```text
+.github/workflows/ci.yml
+.github/workflows/deploy-pages.yml
+```
+
+Các script hỗ trợ:
+
+```bash
+npm run typecheck
+npm run build
+npm run build:pages
+npm run ci:check
+```
+
+Ý nghĩa:
+
+- `npm run typecheck`: kiểm tra TypeScript cho cả app và `vite.config.ts`.
+- `npm run build`: build production thông thường.
+- `npm run build:pages`: build artifact dành cho GitHub Pages, đồng thời tạo `404.html` và `.nojekyll`.
+- `npm run ci:check`: chạy full check cục bộ giống pipeline CI.
+
+Thiết lập GitHub Pages:
+
+1. Vào `Settings` của repository.
+2. Mở mục `Pages`.
+3. Ở phần `Build and deployment`, chọn `Source = GitHub Actions`.
+
+Repository variables nên cấu hình nếu deploy thật:
+
+- `VITE_BASE_PATH`: base path khi deploy. Nếu bỏ trống, workflow mặc định dùng `/<repo-name>/`.
+- `VITE_GOOGLE_CLIENT_ID`: client ID cho Google OAuth trên môi trường deploy.
+- `VITE_GOOGLE_REDIRECT_URI`: callback URL đầy đủ nếu không muốn app tự suy ra từ domain hiện tại.
+- `GITHUB_PAGES_CNAME`: domain tùy chỉnh nếu dùng custom domain cho GitHub Pages.
+
+Lưu ý triển khai:
+
+- App đã được cấu hình `basename` theo `import.meta.env.BASE_URL` để chạy đúng khi deploy ở subpath.
+- Workflow deploy có tạo `dist/404.html` để hỗ trợ SPA refresh trên GitHub Pages.
+- Nếu dùng Google OAuth trên môi trường deploy, cần whitelist callback URL tương ứng trong Google Cloud Console.

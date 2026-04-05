@@ -5,12 +5,29 @@ import { motion } from "motion/react";
 import { isAuthenticated } from "../../infrastructure/auth/local-storage-auth";
 import hcmutLogo from "../HCMUT.png";
 
-const GOOGLE_CLIENT_ID = "281714396823-ouc85peol850htcsr2rci0iahsjec9sl.apps.googleusercontent.com";
-const GOOGLE_REDIRECT_URI = "http://localhost:5173/auth/callback";
+const DEFAULT_GOOGLE_CLIENT_ID =
+  "281714396823-ouc85peol850htcsr2rci0iahsjec9sl.apps.googleusercontent.com";
+
+function getGoogleClientId() {
+  const configuredClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+  return configuredClientId ? configuredClientId : DEFAULT_GOOGLE_CLIENT_ID;
+}
+
+function getGoogleRedirectUri() {
+  const configuredRedirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI?.trim();
+  if (configuredRedirectUri) {
+    return configuredRedirectUri;
+  }
+
+  return new URL(
+    `${import.meta.env.BASE_URL}auth/callback`,
+    window.location.origin,
+  ).toString();
+}
 
 const GOOGLE_SIGN_IN_URL = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-  client_id: GOOGLE_CLIENT_ID,
-  redirect_uri: GOOGLE_REDIRECT_URI,
+  client_id: getGoogleClientId(),
+  redirect_uri: getGoogleRedirectUri(),
   response_type: "code",
   scope: "openid email profile",
   access_type: "offline",
