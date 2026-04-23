@@ -434,6 +434,14 @@ Thực hiện trên GitHub:
 3. Tại `Build and deployment`
 4. Chọn `Source = GitHub Actions`
 
+Lưu ý quan trọng:
+
+- Nếu repository chưa bật Pages và muốn workflow tự bật bằng `actions/configure-pages@v5` với `enablement: true`, cần tạo secret `PAGES_ADMIN_TOKEN`.
+- `GITHUB_TOKEN` mặc định thường không có đủ quyền để gọi API tạo Pages site, dẫn tới lỗi `Resource not accessible by integration`.
+- `PAGES_ADMIN_TOKEN` nên là Fine-grained PAT có quyền tối thiểu:
+  - `Administration: Read and write` (repository permission)
+  - `Pages: Read and write` (repository permission)
+
 ### 11.2. Cấu hình repository variables
 
 Vào:
@@ -451,6 +459,16 @@ Có thể tạo thêm:
 
 - `VITE_BASE_PATH`
 - `GITHUB_PAGES_CNAME`
+
+Ngoài variables, cần thêm Actions secret nếu muốn tự động enable Pages:
+
+- `PAGES_ADMIN_TOKEN`
+
+Đường dẫn cấu hình:
+
+```text
+Settings > Secrets and variables > Actions > Secrets
+```
 
 ### 11.3. Cấu hình Google Cloud Console
 

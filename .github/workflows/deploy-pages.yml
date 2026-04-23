@@ -27,6 +27,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
+          token: ${{ secrets.PAGES_ADMIN_TOKEN != '' && secrets.PAGES_ADMIN_TOKEN || github.token }}
           enablement: true
 
       - name: Setup Node.js
