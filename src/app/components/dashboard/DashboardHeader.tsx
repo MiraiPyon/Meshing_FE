@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   CheckCircle2,
   CircleUserRound,
+  ChevronDown,
   Download,
   LogOut,
   Play,
@@ -11,6 +12,7 @@ import {
 import { LogoutConfirmDialog } from "../auth/LogoutConfirmDialog";
 import type { AuthProfile } from "../../../infrastructure/auth/local-storage-auth";
 import type { WorkspaceViewModel } from "../../../modules/workspace/application/types";
+import { useMeshAPI } from "../../../hooks/useMeshAPI";
 
 type DashboardHeaderProps = {
   onLogout: () => void;
@@ -23,6 +25,7 @@ type DashboardHeaderProps = {
   | "draftReadyToClose"
   | "handleGenerateMesh"
   | "hasDraft"
+  | "hasMesh"
   | "isMeshing"
   | "isSketching"
   | "removeLastStep"
@@ -36,6 +39,7 @@ export function DashboardHeader({
   draftReadyToClose,
   handleGenerateMesh,
   hasDraft,
+  hasMesh,
   isMeshing,
   isSketching,
   onLogout,
@@ -44,6 +48,21 @@ export function DashboardHeader({
   selectedPoint,
 }: DashboardHeaderProps) {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const meshAPI = useMeshAPI();
+
+  const handleExport = async (fmt: "json" | "dat" | "csv") => {
+    setExportOpen(false);
+    setExporting(true);
+    try {
+      await meshAPI.exportCurrentMesh(fmt);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <>
@@ -110,10 +129,31 @@ export function DashboardHeader({
             <Trash2 className="h-4 w-4" />
             <span>Delete Shape</span>
           </button>
-          <button className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-500">
-            <Download className="h-4 w-4" />
-            <span>Export Later</span>
-          </button>
+          {/* Export */}
+          <div className="relative">
+            <button
+              onClick={() => setExportOpen((v) => !v)}
+              disabled={!hasMesh || exporting}
+              className="flex items-center space-x-1.5 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white disabled:opacity-40"
+            >
+              <Download className="h-4 w-4" />
+              <span>{exporting ? "Exporting..." : "Export"}</span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-white/10 bg-[#0d1117] py-1 shadow-xl">
+                {(["json", "dat", "csv"] as const).map((fmt) => (
+                  <button
+                    key={fmt}
+                    onClick={() => handleExport(fmt)}
+                    className="w-full px-4 py-2 text-left text-sm text-zinc-300 hover:bg-white/5 hover:text-white"
+                  >
+                    .{fmt.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             onClick={() => setLogoutDialogOpen(true)}
             className="flex items-center space-x-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 hover:text-white"

@@ -35,6 +35,7 @@ import type {
   WorkspaceViewModel,
 } from "./types";
 import type { ElementType } from "../../meshing/domain/types";
+import { useMeshAPI } from "../../../hooks/useMeshAPI";
 
 export function useDashboardWorkspace(): WorkspaceViewModel {
   const [machine, dispatchMachine] = useReducer(
@@ -42,6 +43,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     undefined,
     createInitialWorkspaceMachine,
   );
+  const meshAPI = useMeshAPI();
 
   const [thetaMin, setThetaMin] = useState(20.7);
   const [rlRatio, setRlRatio] = useState(1.414);
@@ -433,27 +435,52 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       `Boundary summary: 1 outer loop, ${pslg.holeLoops.length} holes, ${pslg.totalSegments} total segments.`,
     );
 
-    window.setTimeout(() => {
-      try {
-        const nextPreview = generateMesh({
-          elementType,
-          holeLoops,
+    if (meshAPI.isLoggedIn) {
+      // ---- Backend path ----
+      meshAPI
+        .generateMeshFromSketch(outerLoop, holeLoops, elementType, {
           maxLength,
-          outerLoop,
-        });
-        setMeshPreview(nextPreview);
-        addLog(`Generated ${nextPreview.nodes.length} nodes from the current sketch.`);
-        addLog("Interactive mesh preview refreshed.");
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Unable to generate a mesh preview from the current sketch.";
-        addLog(message);
-      } finally {
-        dispatchMachine({ type: "MESH_FINISHED" });
-      }
-    }, 700);
+          thetaMin,
+        })
+        .then((result) => {
+          setMeshPreview(result.preview);
+          addLog(
+            `[BE] Generated ${result.nodeCount} nodes, ${result.elementCount} elements (${elementType}).`,
+          );
+          addLog("Backend mesh ready. Use Export to download.");
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : "Backend mesh failed";
+          addLog(`[BE Error] ${msg} — falling back to local preview.`);
+          // Fallback to local
+          try {
+            const nextPreview = generateMesh({ elementType, holeLoops, maxLength, outerLoop });
+            setMeshPreview(nextPreview);
+            addLog(`[Local] Generated ${nextPreview.nodes.length} nodes (preview only).`);
+          } catch (localErr) {
+            addLog(localErr instanceof Error ? localErr.message : "Local preview also failed.");
+          }
+        })
+        .finally(() => dispatchMachine({ type: "MESH_FINISHED" }));
+    } else {
+      // ---- Local fallback (not logged in) ----
+      window.setTimeout(() => {
+        try {
+          const nextPreview = generateMesh({ elementType, holeLoops, maxLength, outerLoop });
+          setMeshPreview(nextPreview);
+          addLog(`[Local] Generated ${nextPreview.nodes.length} nodes from the current sketch.`);
+          addLog("Login to generate full mesh via Backend.");
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Unable to generate a mesh preview from the current sketch.";
+          addLog(message);
+        } finally {
+          dispatchMachine({ type: "MESH_FINISHED" });
+        }
+      }, 700);
+    }
   };
 
   return {

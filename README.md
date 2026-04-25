@@ -1,346 +1,202 @@
 # Meshing_FE
 
-`Meshing_FE` là frontend demo cho bài toán phác thảo hình học 2D, chuẩn hóa miền, sinh preview mesh và hiển thị thống kê trực quan phục vụ học tập, mô phỏng và thuyết trình ý tưởng liên quan đến meshing/FEM.
+Frontend cho nền tảng Web mô phỏng **Meshing 2D đa phương thức** và **Dashboard quản lý chất lượng phần tử hữu hạn**.
 
-Project tập trung vào trải nghiệm tương tác trên trình duyệt:
+---
 
-- Vẽ outer boundary và hole trực tiếp trên canvas.
-- Chỉnh sửa nhanh bằng chọn điểm, kéo điểm, xóa stroke và undo.
-- Sinh preview mesh từ hình học đã đóng.
-- Hiển thị thống kê như số node, số cạnh, số phần tử ước lượng và DOF.
-- Tổ chức mã nguồn theo hướng tách `app`, `application`, `domain`, `infrastructure`.
+## Tính năng
 
-## Tài liệu
+### Khởi tạo mô hình hình học
+- **Vẽ tay tự do (Sketch → PSLG)**: vẽ outer boundary và holes trực tiếp trên canvas
+- **Select & Drag**: chọn và kéo điểm để chỉnh hình
+- **Eraser**: cắt bỏ draft strokes
+- **Undo/Reset**: quay lại thao tác hoặc xóa toàn bộ workspace
+- Tự động chuẩn hóa orientation (CCW cho outer, CW cho holes)
 
-- [Tài liệu CI/CD](./CI_CD.md)
+### Động cơ chia lưới
+- **T3** (Tam giác 3 nút) — Delaunay triangulation qua Backend
+- **Q4** (Tứ giác 4 nút) — Structured grid qua Backend
+- Hỗ trợ **polygon có holes** (lỗ thủng)
+- Cấu hình: Min Angle, R/L Ratio, Grid Spacing, nx×ny
+- **Fallback**: nếu chưa đăng nhập, dùng local preview mesh
 
-## 1. Mục tiêu project
+### Dashboard phân tích chất lượng
+- **Topology Snapshot**: Nodes, Edges, Elements, DOF
+- **Distribution Preview**: biểu đồ phân bố kích thước phần tử (Recharts)
+- **Execution Time**: thời gian tạo lưới
+- **Console log**: hiển thị quá trình meshing real-time
 
-Project này được xây dựng như một giao diện frontend cho quy trình làm việc sau:
+### Quản lý dự án & Xuất dữ liệu
+- **Export**: JSON / DAT (MATLAB format) / CSV — download trực tiếp từ Dashboard
+- **Auth**: Google OAuth2 → JWT, auto-refresh khi token hết hạn
+- **Logout**: revoke refresh token trên Backend
 
-1. Người dùng đăng nhập vào hệ thống.
-2. Người dùng vẽ biên ngoài của miền tính toán.
-3. Người dùng thêm các lỗ bên trong miền.
-4. Hệ thống chuẩn hóa dữ liệu hình học và kiểm tra điều kiện tối thiểu.
-5. Hệ thống sinh preview mesh để người dùng quan sát nhanh cấu trúc lưới.
-6. Dashboard hiển thị các chỉ số phân tích và biểu đồ phân bố để phục vụ đánh giá sơ bộ.
+---
 
-README này mô tả đúng trạng thái hiện tại của codebase. Đây là frontend demo/preview, chưa phải một mesher FEM hoàn chỉnh cho môi trường production.
+## Quick Start
 
-## 2. Tính năng hiện có
+```bash
+# 1. Cài dependencies
+npm install
 
-- Landing page giới thiệu hệ thống và điều hướng đến phần đăng nhập hoặc workspace.
-- Đăng nhập bằng Google qua flow frontend và callback route.
-- Route guard cơ bản cho `/dashboard`.
-- Dashboard tương tác với canvas để vẽ hình học 2D.
-- Tool vẽ `Outer Boundary`.
-- Tool vẽ `Hole`.
-- Tool `Select` để chọn và kéo điểm.
-- Tool `Eraser` để xóa các đoạn draft stroke.
-- Zoom in, zoom out, reset zoom.
-- `Close Shape` để đóng miền đang vẽ.
-- `Undo` để quay lại thao tác gần nhất.
-- `Delete Shape` để xóa biên ngoài hoặc lỗ đang chọn.
-- `Reset Geometry` để xóa toàn bộ workspace.
-- Sinh preview mesh với hai loại phần tử `T3` và `Q4`.
-- Hiển thị console log ngay trong dashboard.
-- Hiển thị thống kê topology và phân bố dữ liệu bằng biểu đồ.
-- Lazy loading cho các page và panel nặng.
+# 2. Tạo .env
+cp .env.example .env
+# Sửa VITE_GOOGLE_CLIENT_ID với Google Client ID của bạn
 
-## 3. Công nghệ sử dụng
+# 3. Chạy dev server
+npm run dev
+```
 
-- React 18
-- TypeScript
+Mở: `http://localhost:5173`
+
+> **Lưu ý**: Cần chạy Backend (`Meshing_BE`) để có đầy đủ tính năng (mesh generation, export, auth).
+
+---
+
+## Cấu trúc thư mục
+
+```
+src/
+├── app/
+│   ├── components/
+│   │   ├── auth/                    # LogoutConfirmDialog
+│   │   ├── dashboard/               # Header, Sidebar, Panels, Canvas, Footer
+│   │   ├── landing/                 # Landing page components
+│   │   └── ui/                      # Skeleton, Dialog, etc.
+│   ├── pages/
+│   │   ├── AuthCallback.tsx         # Google OAuth callback → JWT
+│   │   ├── Dashboard.tsx            # Main workspace
+│   │   ├── Landing.tsx              # Landing page
+│   │   └── Login.tsx                # Login page
+│   ├── App.tsx
+│   └── routes.ts
+├── hooks/
+│   └── useMeshAPI.ts                # Backend mesh integration hook
+├── infrastructure/
+│   ├── auth/
+│   │   └── local-storage-auth.ts    # Token management (access, refresh, profile)
+│   └── canvas/
+│       └── coordinates.ts           # Screen → canvas coordinate transform
+├── modules/
+│   ├── analysis/                    # DOF, mesh stats, quality distribution
+│   ├── geometry/                    # Point, Loop, PSLG, orientation, point-in-polygon
+│   ├── meshing/                     # Preview refinement, strategy pattern (T3/Q4)
+│   └── workspace/                   # State machine, commands, selectors
+├── services/
+│   └── apiClient.ts                 # Full API client (auth, geometry, mesh, FEA, export)
+├── store/
+│   └── meshStore.ts                 # Mesh ID state (geometry_id, mesh_id)
+└── styles/
+```
+
+---
+
+## Kiến trúc & Design Patterns
+
+| Pattern | Ở đâu |
+|---------|-------|
+| **Layered Architecture** | `app/` → `modules/` → `infrastructure/` |
+| **Strategy Pattern** | `T3MeshingStrategy` / `Q4MeshingStrategy` |
+| **State Machine** | `workspace-machine.ts` — mode transitions |
+| **Command Pattern** | `close-shape`, `undo`, `move-point`, `erase-stroke` |
+| **Facade/ViewModel** | `useDashboardWorkspace()` — gom toàn bộ state |
+| **Observer** | React state updates → Dashboard panels re-render |
+| **Factory** | `getMeshingStrategy(elementType)` |
+
+---
+
+## Auth Flow (Google OAuth2 → JWT)
+
+```
+[Login page] ──redirect──▶ [Google OAuth]
+                                │
+                    redirect back to /auth/callback?code=xxx
+                                │
+              POST /api/auth/callback {code, redirect_uri}
+                                │
+              ◀── {access_token, refresh_token}
+                                │
+              localStorage: access_token, refresh_token, profile
+                                │
+[Dashboard] ── all API calls use Bearer token ──▶ [Backend]
+                                │
+              auto-refresh on 401 using refresh_token
+```
+
+---
+
+## API Integration
+
+Frontend gọi Backend qua `src/services/apiClient.ts`:
+
+| Category | Methods |
+|----------|---------|
+| **Auth** | `exchangeAuthCode`, `getMe`, `logout` |
+| **Geometry** | `createRectangle`, `createCircle`, `listGeometries`, `deleteGeometry` |
+| **Mesh** | `createMeshFromSketch`, `createDelaunayMesh`, `createQuadMesh`, `getMesh`, `listMeshes`, `deleteMesh`, `exportMesh` |
+| **FEA** | `solveFEA` |
+
+Auto-refresh: khi nhận HTTP 401, tự động gọi `/api/auth/refresh` rồi retry request.
+
+---
+
+## Mesh Generation Flow
+
+```
+[User draws shape] → Close Shape → Generate Mesh
+                                         │
+                          ┌── Logged in? ─┤
+                          │               │
+                     [Backend]       [Local preview]
+                          │               │
+          POST /api/mesh/from-sketch      previewRefinement()
+                          │               │
+              BE returns nodes[]         FE sampling
+              + elements[]              + neighbor edges
+                          │               │
+                    ┌─────┴─────┐         │
+                    ▼           ▼         ▼
+              Canvas render   Stats    Canvas render
+```
+
+---
+
+## Scripts
+
+```bash
+npm run dev          # Dev server (Vite)
+npm run build        # Production build
+npm run typecheck    # TypeScript check
+npm run build:pages  # Build for GitHub Pages
+npm run ci:check     # Full CI check
+```
+
+---
+
+## Biến môi trường
+
+```env
+VITE_BASE_PATH=/
+VITE_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+VITE_GOOGLE_REDIRECT_URI=http://localhost:5173/auth/callback
+```
+
+---
+
+## Công nghệ
+
+- React 18 + TypeScript
 - Vite 6
 - React Router 7
 - Tailwind CSS 4
-- Radix UI
-- Recharts
-- Motion
-- Lucide React
-- HTML Canvas API
+- Recharts (biểu đồ)
+- Radix UI (dialogs)
+- Motion (animations)
+- Lucide React (icons)
+- HTML Canvas API (mesh rendering)
 
-## 4. Cấu trúc thư mục chính
+---
 
-```text
-src/
-|-- app/
-|   |-- components/
-|   |-- pages/
-|   |-- App.tsx
-|   `-- routes.ts
-|-- infrastructure/
-|   |-- auth/
-|   `-- canvas/
-|-- modules/
-|   |-- analysis/
-|   |-- geometry/
-|   |-- meshing/
-|   `-- workspace/
-|-- styles/
-`-- main.tsx
-```
+## License
 
-Ý nghĩa từng phần:
-
-- `src/app`: tầng UI, routing, page composition và các component hiển thị.
-- `src/infrastructure`: các phần phụ thuộc môi trường trình duyệt như `localStorage`, canvas renderer, chuyển đổi tọa độ.
-- `src/modules/geometry`: kiểu dữ liệu hình học, chuẩn hóa orientation, kiểm tra và xử lý miền.
-- `src/modules/meshing`: logic sinh preview mesh và các chiến lược theo loại phần tử.
-- `src/modules/analysis`: tính toán thống kê, DOF và dữ liệu biểu đồ.
-- `src/modules/workspace`: state chính của dashboard, command xử lý thao tác người dùng và orchestration cho toàn bộ workspace.
-
-## 5. Kiến trúc và design pattern
-
-Project hiện tại đã có một số pattern rõ ràng:
-
-- `Layered / Clean-ish architecture`: tách UI, application logic, domain logic và infrastructure.
-- `State machine`: workspace dùng event + reducer để chuyển trạng thái vẽ, chọn, xóa, meshing.
-- `Strategy pattern`: chọn cách tính theo loại phần tử `T3` hoặc `Q4`.
-- `Command-like functions`: các thao tác như `close shape`, `undo`, `move point`, `erase stroke` được tách thành các hàm xử lý riêng.
-- `Facade/ViewModel hook`: `useDashboardWorkspace()` gom state, action và dữ liệu cho toàn bộ dashboard.
-- `Renderer separation`: logic vẽ canvas nằm riêng khỏi component React.
-
-Điểm mạnh của cách tổ chức này:
-
-- UI không ôm quá nhiều business logic.
-- Domain logic có thể tái sử dụng và test độc lập dễ hơn.
-- Workspace dễ mở rộng thêm tool hoặc quy tắc mới.
-- Canvas rendering không bị trộn trực tiếp vào JSX.
-
-## 6. Luồng hoạt động của ứng dụng
-
-Luồng tổng quát:
-
-1. Người dùng vào `/`.
-2. Chọn đăng nhập tại `/login`.
-3. Sau callback, trạng thái đăng nhập được lưu trong `localStorage`.
-4. Người dùng vào `/dashboard`.
-5. Dashboard gọi `useDashboardWorkspace()` để quản lý trạng thái toàn cục của workspace.
-6. Người dùng vẽ biên ngoài và lỗ.
-7. Khi nhấn `Generate Mesh`, ứng dụng thực hiện:
-   - Chuẩn hóa dữ liệu thành `PSLG`.
-   - Kiểm tra hình học tối thiểu.
-   - Sinh preview mesh từ miền kín.
-   - Tính toán dữ liệu thống kê và biểu đồ.
-8. Kết quả được hiển thị lại trên canvas và panel bên phải.
-
-Luồng sinh preview mesh hiện tại:
-
-1. `buildPSLG()` chuẩn hóa orientation cho outer loop và hole loops.
-2. `validateGeometry()` kiểm tra mỗi loop có đủ số điểm tối thiểu.
-3. `previewRefinement()` lấy mẫu điểm bên trong miền và dựng các cạnh lân cận để hiển thị preview.
-4. `analyzeMesh()` tạo dữ liệu thống kê và phân bố phục vụ dashboard.
-
-## 7. Hướng dẫn cài đặt và chạy project
-
-### Yêu cầu môi trường
-
-- Node.js
-- npm
-
-### Cài đặt dependencies
-
-```bash
-npm install
-```
-
-### Chạy môi trường development
-
-```bash
-npm run dev
-```
-
-Sau khi chạy, Vite thường phục vụ ứng dụng tại:
-
-```text
-http://localhost:5173
-```
-
-### Build production
-
-```bash
-npm run build
-```
-
-Output build sẽ được tạo trong thư mục `dist/`.
-
-## 8. Scripts hiện có
-
-```bash
-npm run dev
-npm run build
-npm run typecheck
-npm run build:pages
-npm run ci:check
-```
-
-Hiện tại project chưa cấu hình script riêng cho:
-
-- test
-- lint
-- preview
-
-## 9. Cấu hình đăng nhập Google
-
-Flow đăng nhập hiện nằm hoàn toàn ở frontend.
-
-Các biến môi trường liên quan được mô tả trong:
-
-```text
-.env.example
-```
-
-Giá trị đang được hỗ trợ:
-
-- `VITE_GOOGLE_CLIENT_ID`
-- `VITE_GOOGLE_REDIRECT_URI`
-- `VITE_BASE_PATH`
-
-Khi đổi môi trường chạy hoặc deploy sang domain khác, cần cập nhật lại callback URL cho khớp với URL thực tế.
-
-Lưu ý quan trọng:
-
-- Callback hiện kiểm tra sự hiện diện của một số query params thành công và lưu trạng thái vào `localStorage`.
-- Project chưa có backend để verify token hoặc trao đổi code lấy access token an toàn.
-- Cách làm này phù hợp cho demo frontend hoặc prototype, không phù hợp để dùng như một hệ thống xác thực production-ready.
-
-## 10. Hướng dẫn sử dụng dashboard
-
-Quy trình sử dụng khuyến nghị:
-
-1. Mở dashboard sau khi đăng nhập.
-2. Chọn tool `Outer Boundary`.
-3. Giữ chuột trái và kéo để vẽ stroke.
-4. Nhấn `Close Shape` hoặc phím `Enter` để đóng miền ngoài.
-5. Chọn tool `Hole` nếu cần vẽ lỗ bên trong.
-6. Tiếp tục vẽ và đóng từng lỗ.
-7. Chọn `Generate Mesh` để sinh preview mesh.
-8. Quan sát canvas, thông số topology và biểu đồ ở panel bên phải.
-
-Tác vụ hỗ trợ:
-
-- `Esc`: hủy stroke hiện tại.
-- `Enter`: đóng shape hiện tại nếu đủ số điểm.
-- `Delete` hoặc `Backspace`: hủy draft hoặc xóa shape đang chọn tùy ngữ cảnh.
-- `Undo`: xóa thao tác gần nhất.
-- `Select`: chọn và kéo điểm của biên ngoài hoặc lỗ.
-- `Eraser`: cắt bỏ các đoạn của draft stroke.
-
-## 11. Các module nghiệp vụ chính
-
-### Geometry
-
-Chịu trách nhiệm cho:
-
-- kiểu dữ liệu `Point`, `Loop`, `PSLG`
-- chuẩn hóa orientation của polygon
-- kiểm tra miền hợp lệ ở mức tối thiểu
-- xử lý phép đo và kiểm tra điểm nằm trong polygon
-
-### Meshing
-
-Chịu trách nhiệm cho:
-
-- nhận dữ liệu hình học đã chuẩn hóa
-- sinh preview mesh từ miền đầu vào
-- áp dụng strategy theo loại phần tử `T3` hoặc `Q4`
-
-### Analysis
-
-Chịu trách nhiệm cho:
-
-- tính DOF
-- xây dựng số liệu thống kê
-- tạo dữ liệu biểu đồ phân bố
-
-### Workspace
-
-Chịu trách nhiệm cho:
-
-- quản lý state toàn bộ dashboard
-- điều phối tool hiện hành
-- xử lý command từ người dùng
-- đồng bộ trạng thái canvas, log và mesh preview
-
-## 12. Những điểm đã làm tốt trong codebase
-
-- Tách domain logic ra khỏi UI tương đối rõ ràng.
-- Phần dashboard đã được gom qua `useDashboardWorkspace()` nên page component không bị quá nặng về điều phối.
-- Canvas renderer được đặt ngoài React component, dễ đọc và dễ bảo trì hơn.
-- Dữ liệu thống kê và loại phần tử được tổ chức thành module độc lập.
-- Router có lazy loading và loading fallback.
-
-## 13. Giới hạn hiện tại
-
-Đây là các giới hạn cần nêu rõ khi sử dụng hoặc trình bày project:
-
-- Phần mesh hiện là preview mesh phục vụ trực quan hóa, chưa phải bộ sinh lưới FEM hoàn chỉnh.
-- Hàm sinh lưới hiện dựa trên sampling/proxy logic trong miền, không phải một cài đặt Delaunay refinement đầy đủ cho production.
-- `thetaMin` và `rlRatio` hiện có slider trên UI nhưng chưa được đưa vào pipeline sinh mesh thực tế.
-- `maxLength` đang là tham số ảnh hưởng trực tiếp đến mật độ preview mesh.
-- `Export Later` mới là placeholder giao diện, chưa có chức năng export.
-- Validation hình học hiện ở mức cơ bản, chưa bao phủ đầy đủ các trường hợp tự cắt, suy biến hoặc topology phức tạp.
-- Xác thực Google hiện ở mức demo frontend và không nên dùng nguyên trạng cho production.
-- Chưa có test tự động trong repo.
-
-## 14. Hướng phát triển tiếp theo
-
-Nếu muốn nâng cấp project, đây là các hướng nên ưu tiên:
-
-- Đưa cấu hình Google OAuth sang `.env`.
-- Bổ sung backend xác thực callback an toàn.
-- Thay preview meshing bằng thuật toán meshing thực sự phù hợp với FEM.
-- Kết nối `thetaMin` và `rlRatio` vào pipeline sinh lưới.
-- Bổ sung export dữ liệu mesh và hình học.
-- Viết unit test cho `domain services`, `use cases` và reducer/state machine.
-- Thêm linting và CI cơ bản.
-
-## 15. CI/CD
-
-Project hiện đã có CI/CD bằng GitHub Actions:
-
-- `CI`: chạy khi mở `pull request` và khi push lên `main`.
-- `CD`: tự build và deploy lên GitHub Pages khi merge vào `main`.
-
-Các file workflow:
-
-```text
-.github/workflows/ci.yml
-.github/workflows/deploy-pages.yml
-```
-
-Các script hỗ trợ:
-
-```bash
-npm run typecheck
-npm run build
-npm run build:pages
-npm run ci:check
-```
-
-Ý nghĩa:
-
-- `npm run typecheck`: kiểm tra TypeScript cho cả app và `vite.config.ts`.
-- `npm run build`: build production thông thường.
-- `npm run build:pages`: build artifact dành cho GitHub Pages, đồng thời tạo `404.html` và `.nojekyll`.
-- `npm run ci:check`: chạy full check cục bộ giống pipeline CI.
-
-Thiết lập GitHub Pages:
-
-1. Vào `Settings` của repository.
-2. Mở mục `Pages`.
-3. Ở phần `Build and deployment`, chọn `Source = GitHub Actions`.
-
-Repository variables nên cấu hình nếu deploy thật:
-
-- `VITE_BASE_PATH`: base path khi deploy. Nếu bỏ trống, workflow mặc định dùng `/<repo-name>/`.
-- `VITE_GOOGLE_CLIENT_ID`: client ID cho Google OAuth trên môi trường deploy.
-- `VITE_GOOGLE_REDIRECT_URI`: callback URL đầy đủ nếu không muốn app tự suy ra từ domain hiện tại.
-- `GITHUB_PAGES_CNAME`: domain tùy chỉnh nếu dùng custom domain cho GitHub Pages.
-
-Lưu ý triển khai:
-
-- App đã được cấu hình `basename` theo `import.meta.env.BASE_URL` để chạy đúng khi deploy ở subpath.
-- Workflow deploy có tạo `dist/404.html` để hỗ trợ SPA refresh trên GitHub Pages.
-- Nếu dùng Google OAuth trên môi trường deploy, cần whitelist callback URL tương ứng trong Google Cloud Console.
+MIT

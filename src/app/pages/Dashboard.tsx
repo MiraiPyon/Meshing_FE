@@ -8,7 +8,9 @@ import { Skeleton } from "../components/ui/skeleton";
 import {
   clearAuthentication,
   getAuthProfile,
+  getRefreshToken,
 } from "../../infrastructure/auth/local-storage-auth";
+import { apiClient } from "../../services/apiClient";
 import { useDashboardWorkspace } from "../../modules/workspace/application/use-dashboard-workspace";
 
 const DashboardPanels = lazy(async () => {
@@ -36,7 +38,11 @@ export function Dashboard() {
   const dashboard = useDashboardWorkspace();
   const profile = useMemo(() => getAuthProfile(), []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      await apiClient.logout(refreshToken);
+    }
     clearAuthentication();
     navigate("/login", { replace: true });
   };
@@ -59,6 +65,7 @@ export function Dashboard() {
             draftReadyToClose={dashboard.draftReadyToClose}
             handleGenerateMesh={dashboard.handleGenerateMesh}
             hasDraft={dashboard.hasDraft}
+            hasMesh={dashboard.hasMesh}
             isMeshing={dashboard.isMeshing}
             isSketching={dashboard.isSketching}
             onLogout={handleLogout}
