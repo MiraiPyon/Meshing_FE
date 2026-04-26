@@ -25,21 +25,21 @@ const OP_CONFIG: {
     op: "union",
     label: "Union (A ∪ B)",
     icon: Combine,
-    desc: "Hợp nhất hai hình",
+    desc: "Merge two shapes",
     color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
   },
   {
     op: "subtract",
     label: "Subtract (A − B)",
     icon: Minus,
-    desc: "Trừ hình B khỏi A",
+    desc: "Subtract shape B from A",
     color: "text-orange-400 border-orange-500/30 bg-orange-500/10",
   },
   {
     op: "intersect",
     label: "Intersect (A ∩ B)",
     icon: Crosshair,
-    desc: "Phần giao hai hình",
+    desc: "Intersection of two shapes",
     color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
   },
 ];
@@ -88,12 +88,12 @@ export function BooleanDialog({
 
   const handleExecute = async () => {
     if (!polygonA) {
-      setError("Vẽ outer boundary trước (ít nhất 3 điểm).");
+      setError("Draw the outer boundary first (at least 3 points).");
       return;
     }
     const polygonB = parseCoords(polygonBText);
     if (!polygonB) {
-      setError("Polygon B không hợp lệ. Nhập: x1,y1; x2,y2; x3,y3");
+      setError("Polygon B is invalid. Enter: x1,y1; x2,y2; x3,y3");
       return;
     }
 
@@ -136,8 +136,7 @@ export function BooleanDialog({
           Boolean Operations (CSG)
         </h2>
         <p className="mb-5 text-xs text-zinc-500">
-          Polygon A = outer loop hiện tại trên canvas ({outerLoop.length} pts).
-          Nhập Polygon B bên dưới.
+          Polygon A = current outer loop on the canvas ({outerLoop.length} pts). Enter Polygon B below.
         </p>
 
         {/* Operation selector */}
@@ -168,14 +167,14 @@ export function BooleanDialog({
           <div className="max-h-16 overflow-y-auto rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 font-mono text-xs text-zinc-500">
             {polygonA
               ? pointsToString(outerLoop)
-              : "Chưa có outer loop. Vẽ trước."}
+              : "No outer loop. Draw one first."}
           </div>
         </div>
 
         {/* Polygon B input */}
         <div className="mb-4">
           <label className="mb-1 block text-xs font-semibold text-zinc-400">
-            Polygon B (nhập tọa độ: x1,y1; x2,y2; ...)
+            Polygon B (enter coordinates: x1,y1; x2,y2; ...)
           </label>
           <textarea
             value={polygonBText}

@@ -25,21 +25,21 @@ export function LogoutConfirmDialog({
       <AlertDialogContent className="border-white/10 bg-[#0b1120] text-zinc-200 shadow-2xl">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-white">
-            Xác nhận đăng xuất
+            Confirm logout
           </AlertDialogTitle>
           <AlertDialogDescription className="text-zinc-400">
-            Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại không?
+            Are you sure you want to log out of the current account?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel className="border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10 hover:text-white">
-            Hủy
+            Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-600 text-white hover:bg-red-500"
           >
-            Đăng xuất
+            Log out
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

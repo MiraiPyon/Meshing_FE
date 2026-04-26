@@ -156,8 +156,8 @@ export function DashboardPanels({
               <label className="text-xs font-semibold text-zinc-300">
                 Min Angle Constraint
               </label>
-              <span className="rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-400">
-                {thetaMin.toFixed(1)}ﾂｰ
+                <span className="rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-400">
+                {thetaMin.toFixed(1)}°
               </span>
             </div>
             <input

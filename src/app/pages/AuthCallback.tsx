@@ -39,7 +39,7 @@ export function AuthCallback() {
       })
       .catch((err: unknown) => {
         console.error(err);
-        setErrorMsg(err instanceof Error ? err.message : "Xác thực thất bại");
+        setErrorMsg(err instanceof Error ? err.message : "Authentication failed");
         setTimeout(() => navigate("/login", { replace: true }), 3000);
       });
   }, [navigate]);
@@ -52,16 +52,16 @@ export function AuthCallback() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-2xl text-red-400">
               ✕
             </div>
-            <h1 className="text-xl font-semibold text-white">Lỗi xác thực</h1>
+            <h1 className="text-xl font-semibold text-white">Authentication error</h1>
             <p className="mt-2 text-sm leading-6 text-red-400">{errorMsg}</p>
-            <p className="mt-2 text-xs text-zinc-500">Đang chuyển về trang đăng nhập...</p>
+            <p className="mt-2 text-xs text-zinc-500">Redirecting to login...</p>
           </>
         ) : (
           <>
             <LoaderCircle className="h-10 w-10 animate-spin text-blue-400" />
-            <h1 className="mt-5 text-xl font-semibold text-white">Đang xác thực</h1>
+            <h1 className="mt-5 text-xl font-semibold text-white">Authenticating</h1>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Hệ thống đang trao đổi mã với Backend và lấy thông tin tài khoản...
+              Exchanging code with backend and retrieving account information...
             </p>
           </>
         )}

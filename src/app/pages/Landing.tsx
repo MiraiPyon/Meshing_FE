@@ -118,7 +118,7 @@ export function Landing() {
                 className="h-[4.125rem] w-[4.125rem] rounded-full object-cover"
               />
               <span className="text-xl font-bold tracking-tight text-white">
-                Nhóm 3
+                Group 3
               </span>
             </motion.div>
 
@@ -144,10 +144,10 @@ export function Landing() {
                   >
                     <DropdownMenuLabel className="px-3 py-2">
                       <div className="text-sm font-semibold text-white">
-                        {profile?.name ?? "Người dùng Google"}
+                        {profile?.name ?? "Google user"}
                       </div>
                       <div className="text-xs text-zinc-400">
-                        {profile?.email ?? "Đã đăng nhập"}
+                        {profile?.email ?? "Signed in"}
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-white/10" />
@@ -156,7 +156,7 @@ export function Landing() {
                       className="group cursor-pointer rounded-lg px-3 py-2 font-semibold text-red-400 transition-all hover:bg-red-500/10 hover:text-red-400 focus:bg-red-500/10 focus:text-red-400"
                     >
                       <LogOut className="h-4 w-4 text-sm font-semibold transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-rotate-6 group-focus:translate-x-0.5 group-focus:-rotate-6" />
-                      Đăng xuất
+                      Log out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -166,7 +166,7 @@ export function Landing() {
                   to="/login"
                   className="group inline-flex items-center justify-center gap-2 rounded-xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)]"
                 >
-                  <span className="leading-none">Đăng Nhập</span>
+                  <span className="leading-none">Sign In</span>
                   <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
                 </Link>
               ) : null}
@@ -188,7 +188,7 @@ export function Landing() {
                 variants={fadeIn}
                 className="mb-8 text-6xl font-bold leading-[1.1] tracking-tighter text-white md:text-7xl"
               >
-                Đồ Án Thực Tập Đa Ngành
+                Multidisciplinary Project
               </motion.h1>
 
               <motion.p
@@ -199,16 +199,16 @@ export function Landing() {
                 Tuấn - Nguyễn Tăng Trung
               </motion.p>
 
-              <motion.div
-                variants={fadeIn}
-                className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0"
-              >
-                <Link
-                  to={authenticated ? "/dashboard" : "/login"}
-                  className="w-full rounded-xl border border-blue-500/50 bg-blue-600 px-8 py-4 text-base font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:bg-blue-500 hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] sm:w-auto"
+                <motion.div
+                  variants={fadeIn}
+                  className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-6 sm:space-y-0"
                 >
-                  Khám Phá
-                </Link>
+                  <Link
+                    to={authenticated ? "/dashboard" : "/login"}
+                    className="w-full rounded-xl border border-blue-500/50 bg-blue-600 px-8 py-4 text-base font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:bg-blue-500 hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] sm:w-auto"
+                  >
+                    Explore
+                  </Link>
                 <a
                   href="#architecture"
                   onClick={handleArchitectureClick}
@@ -237,9 +237,7 @@ export function Landing() {
                 System Architecture
               </h2>
               <p className="max-w-2xl text-lg text-zinc-400">
-                Hệ thống mô phỏng quy trình chuẩn hóa PSLG, sinh lưới
-                Delaunay Refinement và trực quan hóa các chỉ số chất lượng
-                lưới để phục vụ phân tích.
+                The system simulates the PSLG normalization process, generates meshes using Delaunay Refinement, and visualizes mesh quality metrics for analysis.
               </p>
             </motion.div>
 
@@ -257,14 +255,13 @@ export function Landing() {
                     Geometric Modeling
                   </h3>
                   <p className="mb-6 text-sm leading-relaxed text-zinc-400">
-                    Chuyển biên hình học sang cấu trúc PSLG, gom nút topo và
-                    nhận diện chính xác vòng ngoài, vòng lỗ trước khi sinh lưới.
+                    Convert geometric boundaries to a PSLG structure, merge topological nodes, and accurately detect outer loops and holes before meshing.
                   </p>
                   <ul className="space-y-3">
                     {[
-                      "Theo dõi biên ngoài CCW và lỗ CW",
-                      "Kiểm tra giao cắt giữa các đoạn biên",
-                      "Hợp nhất nút topo trùng nhau",
+                      "Ensure outer boundary is CCW and holes are CW",
+                      "Check intersections between boundary segments",
+                      "Merge coincident topological nodes",
                     ].map((item) => (
                       <li
                         key={item}
@@ -291,14 +288,13 @@ export function Landing() {
                     Delaunay Engine
                   </h3>
                   <p className="mb-6 text-sm leading-relaxed text-zinc-400">
-                    Sinh lưới bằng Delaunay Refinement với các ràng buộc về góc
-                    tối thiểu, tỉ lệ bán kính ngoại tiếp và độ dài cạnh cực đại.
+                    Generate meshes using Delaunay Refinement with constraints on minimum angle, circumradius ratio, and maximum edge length.
                   </p>
                   <ul className="space-y-3">
                     {[
-                      "Loại bỏ phần tử mảnh với góc quá nhỏ",
-                      "Chia nhỏ các cạnh vi phạm ràng buộc",
-                      "Kiểm tra miền bằng ray casting",
+                      "Remove skinny elements with very small angles",
+                      "Refine edges that violate constraints",
+                      "Domain checks via ray casting",
                     ].map((item) => (
                       <li
                         key={item}
@@ -325,14 +321,13 @@ export function Landing() {
                     Analysis Dashboard
                   </h3>
                   <p className="mb-6 text-sm leading-relaxed text-zinc-400">
-                    Trực quan hóa dữ liệu lưới, chất lượng phần tử và các thống
-                    kê phục vụ kiểm thử, tối ưu và đánh giá mô hình.
+                    Visualize mesh data, element quality, and statistics for testing, optimization, and model evaluation.
                   </p>
                   <ul className="space-y-3">
                     {[
-                      "Tính số bậc tự do cho T3 và Q4",
-                      "Phân bố sai số rời rạc",
-                      "Phân tích kích thước phần tử",
+                      "Compute degrees of freedom for T3 and Q4",
+                      "Discrete error distribution",
+                      "Element size analysis",
                     ].map((item) => (
                       <li
                         key={item}
@@ -353,10 +348,10 @@ export function Landing() {
       <footer className="relative z-10 border-t border-white/5 bg-[#030303] py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between px-6 lg:flex-row lg:px-8">
           <div className="mb-4 flex items-center space-x-2 lg:mb-0">
-            <span className="font-medium text-zinc-500">Nhóm 3</span>
+            <span className="font-medium text-zinc-500">Group 3</span>
           </div>
           <p className="text-sm text-zinc-600">
-            Nhóm 3 &copy; {new Date().getFullYear()}
+            Group 3 &copy; {new Date().getFullYear()}
           </p>
         </div>
       </footer>

@@ -101,9 +101,9 @@ export function Login() {
                 className="h-[54px] w-[54px] object-cover"
               />
             </div>
-            <span className="text-xl font-semibold tracking-tight">Nhóm 3</span>
+            <span className="text-xl font-semibold tracking-tight">Group 3</span>
           </div>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white">Đồ Án Thực Tập Đa Ngành</h1>
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white">Multidisciplinary Project</h1>
           <p className="max-w-md text-lg text-zinc-400">
             Nguyễn Nhật Quang - Tô Nguyên Khoa - Từ Bá Lộc - Huỳnh Hoàng Tuấn - Nguyễn Tăng Trung
           </p>
@@ -111,12 +111,12 @@ export function Login() {
       </div>
 
       <div className="relative z-10 flex w-full items-center justify-center bg-[#030303] p-8 sm:p-12 lg:w-1/2">
-        <Link
+          <Link
           to="/"
           className="group absolute left-8 top-8 z-20 inline-flex items-center justify-center gap-2 rounded-xl border border-black bg-gradient-to-b from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-[0_0_30px_rgba(37,99,235,0.25)] hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)] sm:left-12 sm:top-12"
         >
           <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Quay lại trang chủ
+          Back to Home
         </Link>
 
         <motion.div
@@ -126,9 +126,9 @@ export function Login() {
           className="w-full max-w-md space-y-8"
         >
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-white">Đăng nhập</h2>
+            <h2 className="text-3xl font-semibold tracking-tight text-white">Sign in</h2>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
-              Click vào nút bên dưới để đăng nhập bằng tài khoản Google. Sau khi xácc thực thành công, bạn sẽ được chuyển hướng đến Workspace!
+              Click the button below to sign in with your Google account. After successful authentication, you will be redirected to the Workspace!
             </p>
           </div>
 

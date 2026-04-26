@@ -112,7 +112,7 @@ export function useMeshAPI() {
 
   async function exportCurrentMesh(format: "json" | "dat" | "csv") {
     const meshId = meshStore.getMeshId();
-    if (!meshId) throw new Error("Chưa có mesh nào được tạo từ Backend");
+    if (!meshId) throw new Error("No mesh has been created by the backend");
     await apiClient.exportMesh(meshId, format);
   }
 
