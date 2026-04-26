@@ -483,8 +483,19 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     }
   };
 
+  const applyBooleanResult = (outer: Point[], holes: Point[][]) => {
+    setOuterLoop(outer);
+    setHoleLoops(holes);
+    setDraftStrokes([]);
+    setSelectedPoint(null);
+    setMeshPreview(null);
+    dispatchMachine({ type: "SHAPE_CLOSED", closedDraftType: "outer" });
+  };
+
   return {
     activeTool,
+    addLog,
+    applyBooleanResult,
     cancelCurrentSketch,
     closeCurrentShape,
     deleteSelectedShape,

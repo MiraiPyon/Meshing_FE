@@ -140,6 +140,28 @@ export const apiClient = {
     });
   },
 
+  async booleanOperation(data: {
+    polygon_a: number[][];
+    polygon_b: number[][];
+    operation: "union" | "subtract" | "intersect";
+    name?: string;
+  }): Promise<{
+    name: string;
+    operation: string;
+    outer_boundary: number[][];
+    holes: number[][][];
+    area: number;
+    num_vertices: number;
+    is_valid: boolean;
+  }> {
+    const res = await withAuth(`${BASE_URL}/geometry/boolean`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
   // ===== Mesh =====
 
   async createDelaunayMesh(data: { geometry_id: string; max_area?: number; min_angle?: number }) {

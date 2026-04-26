@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import {
   AlertCircle,
   Box,
+  Combine,
   Eraser,
   MousePointer2,
   Trash2,
@@ -16,7 +18,9 @@ import type {
 type DashboardSidebarProps = Pick<
   WorkspaceViewModel,
   "activeTool" | "resetGeometry" | "setActiveTool" | "setDraftType"
->;
+> & {
+  onOpenBoolean: () => void;
+};
 
 type ToolConfig = {
   activeClassName: string;
@@ -67,6 +71,7 @@ function getDraftType(tool: Tool): DraftType | null {
 
 export function DashboardSidebar({
   activeTool,
+  onOpenBoolean,
   resetGeometry,
   setActiveTool,
   setDraftType,
@@ -102,6 +107,17 @@ export function DashboardSidebar({
             <Icon className="h-5 w-5" />
           </button>
         ))}
+
+        <div className="my-1 h-px w-8 bg-white/5"></div>
+
+        {/* Boolean Operations button */}
+        <button
+          onClick={onOpenBoolean}
+          className="flex w-full justify-center rounded-xl p-2.5 text-violet-400 transition-all hover:border hover:border-violet-500/20 hover:bg-violet-500/10"
+          title="Boolean Operations (CSG)"
+        >
+          <Combine className="h-5 w-5" />
+        </button>
       </div>
 
       <div className="mt-auto flex w-full flex-col items-center space-y-3 px-3">

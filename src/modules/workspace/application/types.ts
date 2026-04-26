@@ -39,6 +39,8 @@ export type WorkspaceCommandResult = WorkspaceGeometry & {
 
 export type WorkspaceViewModel = {
   activeTool: Tool;
+  addLog: (message: string) => void;
+  applyBooleanResult: (outer: Point[], holes: Point[][]) => void;
   cancelCurrentSketch: () => void;
   closeCurrentShape: () => void;
   deleteSelectedShape: () => void;

@@ -1,9 +1,10 @@
-import { Suspense, lazy, useMemo } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { DashboardFooter } from "../components/dashboard/DashboardFooter";
 import { DashboardHeader } from "../components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "../components/dashboard/DashboardSidebar";
 import { DashboardWorkspacePane } from "../components/dashboard/DashboardWorkspacePane";
+import { BooleanDialog } from "../components/dashboard/BooleanDialog";
 import { Skeleton } from "../components/ui/skeleton";
 import {
   clearAuthentication,
@@ -37,6 +38,7 @@ export function Dashboard() {
 
   const dashboard = useDashboardWorkspace();
   const profile = useMemo(() => getAuthProfile(), []);
+  const [booleanOpen, setBooleanOpen] = useState(false);
 
   const handleLogout = async () => {
     const refreshToken = getRefreshToken();
@@ -52,9 +54,19 @@ export function Dashboard() {
       <div className="flex h-full">
         <DashboardSidebar
           activeTool={dashboard.activeTool}
+          onOpenBoolean={() => setBooleanOpen(true)}
           resetGeometry={dashboard.resetGeometry}
           setActiveTool={dashboard.setActiveTool}
           setDraftType={dashboard.setDraftType}
+        />
+
+        <BooleanDialog
+          open={booleanOpen}
+          onClose={() => setBooleanOpen(false)}
+          outerLoop={dashboard.outerLoop}
+          holeLoops={dashboard.holeLoops}
+          onResult={dashboard.applyBooleanResult}
+          addLog={dashboard.addLog}
         />
 
         <div className="flex min-w-0 flex-1 flex-col bg-[#050816]">

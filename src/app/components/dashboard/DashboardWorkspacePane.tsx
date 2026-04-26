@@ -140,9 +140,9 @@ export function DashboardWorkspacePane({
               <span className="mr-3 select-none text-zinc-600">{index + 1}</span>
               <span
                 className={
-                  log.includes("[BE] ") || log.includes("Generated") || log.includes("refreshed")
+                  log.includes("[BE] ") || log.includes("[Boolean]") || log.includes("Generated") || log.includes("refreshed")
                     ? "text-green-400"
-                    : log.includes("[BE Error]")
+                    : log.includes("[BE Error]") || log.includes("[Boolean Error]")
                       ? "text-red-400"
                       : log.includes("[Local]")
                         ? "text-yellow-400"
