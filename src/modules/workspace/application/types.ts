@@ -1,6 +1,11 @@
 import type { ErrorBar, MeshStats } from "../../analysis/domain/types";
 import type { Loop, Point } from "../../geometry/domain/types";
-import type { ElementType, MeshEdge, MeshPreview } from "../../meshing/domain/types";
+import type {
+  ElementType,
+  MeshEdge,
+  MeshNode,
+  MeshPreview,
+} from "../../meshing/domain/types";
 
 export type Tool = "select" | "boundary" | "hole" | "eraser";
 
@@ -37,6 +42,11 @@ export type WorkspaceCommandResult = WorkspaceGeometry & {
   nextTool?: Tool;
 };
 
+export type PSLGValidationState = {
+  message: string;
+  status: "idle" | "invalid" | "valid";
+};
+
 export type WorkspaceViewModel = {
   activeTool: Tool;
   cancelCurrentSketch: () => void;
@@ -50,7 +60,9 @@ export type WorkspaceViewModel = {
   errorData: ErrorBar[];
   generatedSegments: number;
   geometryReady: boolean;
+  handleExportMesh: (format: "csv" | "dat" | "json") => void;
   handleGenerateMesh: () => void;
+  handleImportSample: () => void;
   handleMouseDown: (
     event: React.MouseEvent<HTMLCanvasElement>,
   ) => void;
@@ -61,16 +73,18 @@ export type WorkspaceViewModel = {
   hasDraft: boolean;
   hasMesh: boolean;
   holeLoops: Loop[];
+  handleValidatePSLG: () => void;
   isMeshing: boolean;
   isSketching: boolean;
   logs: string[];
   maxLength: number;
   meshEdges: MeshEdge[];
-  meshNodes: Point[];
+  meshNodes: MeshNode[];
   meshPreview: MeshPreview | null;
   meshStats: MeshStats;
   mousePos: Point;
   outerLoop: Loop;
+  pslgValidation: PSLGValidationState;
   removeLastStep: () => void;
   resetGeometry: () => void;
   resetZoom: () => void;

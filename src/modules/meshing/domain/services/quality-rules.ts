@@ -1,5 +1,5 @@
 export const computePreviewSpacing = (maxLength: number) =>
-  Math.max(16, Math.round(maxLength * 120));
+  Math.max(20, Math.round(maxLength * 520));
 
 export const estimateTriangleCount = (nodeCount: number) =>
   Math.max(0, Math.round(nodeCount * 1.6));

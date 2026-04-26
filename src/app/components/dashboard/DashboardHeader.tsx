@@ -1,138 +1,57 @@
 import { useState } from "react";
-import {
-  CheckCircle2,
-  CircleUserRound,
-  Download,
-  LogOut,
-  Play,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { CircleUserRound, LogOut } from "lucide-react";
 import { LogoutConfirmDialog } from "../auth/LogoutConfirmDialog";
 import type { AuthProfile } from "../../../infrastructure/auth/local-storage-auth";
-import type { WorkspaceViewModel } from "../../../modules/workspace/application/types";
 
 type DashboardHeaderProps = {
   onLogout: () => void;
   profile: AuthProfile | null;
-} & Pick<
-  WorkspaceViewModel,
-  | "cancelCurrentSketch"
-  | "closeCurrentShape"
-  | "deleteSelectedShape"
-  | "draftReadyToClose"
-  | "handleGenerateMesh"
-  | "hasDraft"
-  | "isMeshing"
-  | "isSketching"
-  | "removeLastStep"
-  | "selectedPoint"
->;
+};
 
-export function DashboardHeader({
-  cancelCurrentSketch,
-  closeCurrentShape,
-  deleteSelectedShape,
-  draftReadyToClose,
-  handleGenerateMesh,
-  hasDraft,
-  isMeshing,
-  isSketching,
-  onLogout,
-  profile,
-  removeLastStep,
-  selectedPoint,
-}: DashboardHeaderProps) {
+export function DashboardHeader({ onLogout, profile }: DashboardHeaderProps) {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   return (
     <>
-      <header className="z-10 flex h-14 items-center justify-between border-b border-white/5 bg-[#070b16] px-6 shadow-sm">
-        <div className="flex items-center space-x-4">
-          <span className="font-mono text-sm text-zinc-200">
+      <header className="z-10 flex h-12 shrink-0 items-center justify-between border-b border-white/5 bg-[#070b16] px-4 shadow-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="truncate font-mono text-sm text-zinc-200">
             interactive_geom.dat
           </span>
           <span className="rounded border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-400">
             Sketch Mode
           </span>
-          <div className="hidden items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 md:flex">
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 md:flex">
             {profile?.avatar ? (
               <img
                 src={profile.avatar}
                 alt={profile.name}
-                className="h-8 w-8 rounded-full object-cover"
+                className="h-7 w-7 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-300">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/10 text-blue-300">
                 <CircleUserRound className="h-4 w-4" />
               </div>
             )}
-            <div className="leading-tight">
-              <div className="text-xs font-semibold text-white">
+            <div className="max-w-52 leading-tight">
+              <div className="truncate text-xs font-semibold text-white">
                 {profile?.name ?? "Nguoi dung Google"}
               </div>
-              <div className="text-[10px] text-zinc-500">
+              <div className="truncate text-[10px] text-zinc-500">
                 {profile?.email ?? "Da dang nhap thanh cong"}
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={cancelCurrentSketch}
-            disabled={!hasDraft && !isSketching}
-            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white disabled:opacity-40"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Cancel Stroke</span>
-          </button>
-          <button
-            onClick={closeCurrentShape}
-            disabled={!draftReadyToClose}
-            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white disabled:opacity-40"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Close Shape</span>
-          </button>
-          <button
-            onClick={removeLastStep}
-            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white"
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span>Undo</span>
-          </button>
-          <button
-            onClick={deleteSelectedShape}
-            disabled={!selectedPoint}
-            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white disabled:opacity-40"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Delete Shape</span>
-          </button>
-          <button className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-500">
-            <Download className="h-4 w-4" />
-            <span>Export Later</span>
-          </button>
           <button
             onClick={() => setLogoutDialogOpen(true)}
-            className="flex items-center space-x-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 hover:text-white"
+            className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
             <span>Dang xuat</span>
-          </button>
-          <div className="mx-2 h-6 w-px bg-white/10"></div>
-          <button
-            onClick={handleGenerateMesh}
-            disabled={isMeshing}
-            className="flex items-center space-x-2 rounded-lg border border-blue-500/50 bg-blue-600 px-5 py-1.5 text-sm font-bold text-white transition-all hover:bg-blue-500 disabled:opacity-50"
-          >
-            {isMeshing ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <Play className="h-4 w-4" fill="currentColor" />
-            )}
-            <span>{isMeshing ? "Sampling..." : "Generate Mesh"}</span>
           </button>
         </div>
       </header>

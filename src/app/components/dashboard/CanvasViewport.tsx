@@ -50,6 +50,7 @@ export function CanvasViewport({
     model.hasMesh,
     model.holeLoops,
     model.meshEdges,
+    model.meshElements,
     model.meshNodes,
     model.mousePos,
     model.outerLoop,
@@ -61,7 +62,7 @@ export function CanvasViewport({
     <div
       ref={containerRef}
       className={cn(
-        "relative flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(30,41,59,0.7),_rgba(2,6,23,1))]",
+        "relative h-full min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(30,41,59,0.7),_rgba(2,6,23,1))]",
         className,
       )}
     >

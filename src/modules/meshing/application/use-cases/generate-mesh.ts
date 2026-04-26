@@ -8,6 +8,7 @@ type GenerateMeshInput = {
   elementType: ElementType;
   holeLoops: Loop[];
   maxLength: number;
+  minAngle: number;
   outerLoop: Loop;
 };
 
@@ -22,6 +23,7 @@ export function generateMesh(input: GenerateMeshInput) {
   return previewRefinement({
     elementType: input.elementType,
     maxLength: input.maxLength,
+    minAngle: input.minAngle,
     pslg,
   });
 }

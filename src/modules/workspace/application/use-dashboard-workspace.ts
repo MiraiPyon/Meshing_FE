@@ -9,6 +9,7 @@ import {
 import { EMPTY_MESH_ANALYSIS, analyzeMesh } from "../../analysis/application/use-cases/analyze-mesh";
 import type { Point } from "../../geometry/domain/types";
 import { buildPSLG } from "../../geometry/application/use-cases/build-pslg";
+import { validateGeometry } from "../../geometry/application/use-cases/validate-geometry";
 import { distance } from "../../geometry/domain/services/measurements";
 import { generateMesh } from "../../meshing/application/use-cases/generate-mesh";
 import { screenToCanvasPoint } from "../../../infrastructure/canvas/coordinates";
@@ -30,11 +31,60 @@ import {
 } from "./state/workspace-machine";
 import type {
   DraftType,
+  PSLGValidationState,
   SelectedPoint,
   Tool,
   WorkspaceViewModel,
 } from "./types";
 import type { ElementType } from "../../meshing/domain/types";
+
+function createCircleLoop(
+  center: Point,
+  radius: number,
+  segments: number,
+  clockwise = false,
+) {
+  return Array.from({ length: segments }, (_, index) => {
+    const t = (index / segments) * Math.PI * 2 * (clockwise ? -1 : 1);
+    return {
+      x: Math.round(center.x + Math.cos(t) * radius),
+      y: Math.round(center.y + Math.sin(t) * radius),
+    };
+  });
+}
+
+function createSampleWrenchGeometry() {
+  return {
+    holeLoops: [
+      createCircleLoop({ x: 300, y: 320 }, 58, 24, true),
+      createCircleLoop({ x: 705, y: 318 }, 47, 22, true),
+    ],
+    outerLoop: [
+      { x: 145, y: 325 },
+      { x: 158, y: 262 },
+      { x: 198, y: 214 },
+      { x: 258, y: 196 },
+      { x: 324, y: 214 },
+      { x: 392, y: 255 },
+      { x: 486, y: 255 },
+      { x: 600, y: 196 },
+      { x: 778, y: 196 },
+      { x: 838, y: 260 },
+      { x: 758, y: 266 },
+      { x: 680, y: 300 },
+      { x: 758, y: 346 },
+      { x: 838, y: 354 },
+      { x: 778, y: 418 },
+      { x: 600, y: 418 },
+      { x: 486, y: 374 },
+      { x: 392, y: 374 },
+      { x: 324, y: 414 },
+      { x: 258, y: 430 },
+      { x: 198, y: 410 },
+      { x: 158, y: 372 },
+    ],
+  };
+}
 
 export function useDashboardWorkspace(): WorkspaceViewModel {
   const [machine, dispatchMachine] = useReducer(
@@ -43,9 +93,9 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     createInitialWorkspaceMachine,
   );
 
-  const [thetaMin, setThetaMin] = useState(20.7);
-  const [rlRatio, setRlRatio] = useState(1.414);
-  const [maxLength, setMaxLength] = useState(0.18);
+  const [thetaMin, setThetaMin] = useState(25.5);
+  const [rlRatio, setRlRatio] = useState(1.15);
+  const [maxLength, setMaxLength] = useState(0.06);
   const [elementType, setElementType] = useState<ElementType>("T3");
   const [outerLoop, setOuterLoop] = useState<Point[]>([]);
   const [holeLoops, setHoleLoops] = useState<Point[][]>([]);
@@ -56,6 +106,10 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [meshPreview, setMeshPreview] = useState<ReturnType<typeof generateMesh> | null>(null);
   const [logs, setLogs] = useState<string[]>(DEFAULT_WORKSPACE_LOGS);
+  const [pslgValidation, setPslgValidation] = useState<PSLGValidationState>({
+    message: "PSLG has not been validated.",
+    status: "idle",
+  });
 
   const draftStrokesRef = useRef<Point[][]>(draftStrokes);
 
@@ -92,9 +146,16 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setMeshPreview(null);
   };
 
+  const markPSLGDirty = () => {
+    setPslgValidation({
+      message: "Geometry changed. Validate PSLG again.",
+      status: "idle",
+    });
+  };
+
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString("en-GB");
-    setLogs((current) => [...current.slice(-11), `[${timestamp}] ${message}`]);
+    setLogs((current) => [...current.slice(-79), `[${timestamp}] ${message}`]);
   };
 
   const getCanvasPoint = (
@@ -171,6 +232,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setHoleLoops(result.holeLoops);
     setDraftStrokes(result.draftStrokes);
     clearMeshPreview();
+    markPSLGDirty();
     addLog(result.logMessage);
 
     if (result.nextTool || result.nextDraftType) {
@@ -194,6 +256,10 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setSelectedPoint(null);
     setDraggingPoint(null);
     clearMeshPreview();
+    setPslgValidation({
+      message: "PSLG has not been validated.",
+      status: "idle",
+    });
     dispatchMachine({ type: "RESET" });
     addLog("Geometry workspace cleared.");
   };
@@ -205,6 +271,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
 
     setDraftStrokes([]);
     dispatchMachine({ type: "POINTER_RELEASED" });
+    markPSLGDirty();
     addLog("Current sketch stroke canceled.");
   };
 
@@ -227,6 +294,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       setHoleLoops([]);
       setSelectedPoint(null);
       clearMeshPreview();
+      markPSLGDirty();
       dispatchMachine({
         draftType: "outer",
         tool: "boundary",
@@ -241,6 +309,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     );
     setSelectedPoint(null);
     clearMeshPreview();
+    markPSLGDirty();
     addLog(`Hole ${selectedPoint.holeIndex + 1} deleted.`);
   };
 
@@ -256,6 +325,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setHoleLoops(result.holeLoops);
     setOuterLoop(result.outerLoop);
     clearMeshPreview();
+    markPSLGDirty();
     addLog(result.logMessage);
 
     if (result.nextTool || result.nextDraftType) {
@@ -279,6 +349,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       dispatchMachine({ type: "ERASER_STARTED" });
       setDraftStrokes((current) => eraseStrokeCommand(current, point));
       clearMeshPreview();
+      markPSLGDirty();
       addLog(`Eraser applied at (${point.x}, ${point.y}).`);
       return;
     }
@@ -301,11 +372,13 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     if (targetType === "outer" && outerLoop.length >= 3) {
       setOuterLoop([]);
       setHoleLoops([]);
+      markPSLGDirty();
       addLog("Starting a new outer boundary. Existing holes were cleared.");
     }
 
     setDraftStrokes((current) => [...current, [point]]);
     clearMeshPreview();
+    markPSLGDirty();
     dispatchMachine({ draftType: targetType, type: "SKETCH_STARTED" });
     addLog(
       `${targetType === "outer" ? "Outer boundary" : "Hole"} sketch started at (${point.x}, ${point.y}).`,
@@ -330,11 +403,13 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       setOuterLoop(result.outerLoop);
       setHoleLoops(result.holeLoops);
       clearMeshPreview();
+      markPSLGDirty();
     }
 
     if (machine.mode === "erasing") {
       setDraftStrokes((current) => eraseStrokeCommand(current, point));
       clearMeshPreview();
+      markPSLGDirty();
     }
 
     if (machine.mode === "drawing") {
@@ -414,6 +489,121 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [draftLoop, isSketching, selectedPoint]);
 
+  const handleValidatePSLG = () => {
+    const pslg = buildPSLG({ holeLoops, outerLoop });
+    const validation = validateGeometry(pslg);
+
+    if (!validation.valid) {
+      const message = validation.message ?? "PSLG validation failed.";
+      setPslgValidation({ message, status: "invalid" });
+      addLog(`PSLG validation failed: ${message}`);
+      return false;
+    }
+
+    const message = `PSLG valid: 1 outer loop, ${pslg.holeLoops.length} inner loops, ${pslg.totalSegments} segments.`;
+    setPslgValidation({ message, status: "valid" });
+    addLog(message);
+    return true;
+  };
+
+  const handleImportSample = () => {
+    const sample = createSampleWrenchGeometry();
+    setOuterLoop(sample.outerLoop);
+    setHoleLoops(sample.holeLoops);
+    setDraftStrokes([]);
+    setSelectedPoint(null);
+    setDraggingPoint(null);
+    setMeshPreview(null);
+    setPslgValidation({
+      message: "Imported shape.dat. Validate PSLG before meshing.",
+      status: "idle",
+    });
+    dispatchMachine({
+      draftType: "hole",
+      mode: "idle",
+      tool: "select",
+      type: "SYNC_CONTEXT",
+    });
+    addLog("Imported shape.dat sample: wrench model with 2 circular holes.");
+    addLog("Detected 1 outer loop (CCW) and 2 inner loops (CW).");
+  };
+
+  const buildExportContent = (format: "csv" | "dat" | "json") => {
+    if (!meshPreview) {
+      return "";
+    }
+
+    if (format === "json") {
+      return JSON.stringify(
+        {
+          mesh: {
+            edgeRecords: meshPreview.edgeRecords,
+            elementType: meshPreview.elementType,
+            elements: meshPreview.elements,
+            nodes: meshPreview.nodes,
+          },
+          pslg: buildPSLG({ holeLoops, outerLoop }),
+          quality: meshAnalysis.stats,
+        },
+        null,
+        2,
+      );
+    }
+
+    if (format === "csv") {
+      const nodeRows = meshPreview.nodes
+        .map((node) => `${node.id},${node.x},${node.y},${node.boundary ? 1 : 0}`)
+        .join("\n");
+      const elementRows = meshPreview.elements
+        .map((element) => `${element.id},${element.type},${element.nodeIds.join(" ")},${element.area.toFixed(4)},${element.minAngle.toFixed(2)},${element.circumradiusToShortestEdge.toFixed(3)},${element.status}`)
+        .join("\n");
+
+      return [
+        "[NODES]",
+        "id,x,y,boundary",
+        nodeRows,
+        "",
+        "[ELEMENTS]",
+        "id,type,node_ids,area,min_angle,ratio,status",
+        elementRows,
+      ].join("\n");
+    }
+
+    const nodeBlock = meshPreview.nodes
+      .map((node) => `${node.id} ${node.x.toFixed(4)} ${node.y.toFixed(4)}`)
+      .join("\n");
+    const elementBlock = meshPreview.elements
+      .map((element) => `${element.id} ${element.type} ${element.nodeIds.join(" ")}`)
+      .join("\n");
+
+    return [
+      "# Meshing_FE export",
+      `# element_type ${meshPreview.elementType}`,
+      `# nodes ${meshPreview.nodes.length}`,
+      `# elements ${meshPreview.elements.length}`,
+      "*NODE",
+      nodeBlock,
+      "*ELEMENT",
+      elementBlock,
+    ].join("\n");
+  };
+
+  const handleExportMesh = (format: "csv" | "dat" | "json") => {
+    if (!meshPreview) {
+      addLog("Generate a mesh before exporting solver data.");
+      return;
+    }
+
+    const content = buildExportContent(format);
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `meshing-workspace.${format}`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    addLog(`Exported meshing-workspace.${format}.`);
+  };
+
   const handleGenerateMesh = () => {
     if (draftPointCount >= 3) {
       addLog("Close the current shape before generating the mesh preview.");
@@ -426,9 +616,22 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       return;
     }
 
+    const validation = validateGeometry(pslg);
+    if (!validation.valid) {
+      const message = validation.message ?? "PSLG validation failed.";
+      setPslgValidation({ message, status: "invalid" });
+      addLog(`PSLG validation failed: ${message}`);
+      return;
+    }
+
+    setPslgValidation({
+      message: "PSLG validation passed.",
+      status: "valid",
+    });
     dispatchMachine({ type: "MESH_STARTED" });
     setMeshPreview(null);
-    addLog("Sampling user-defined geometry...");
+    addLog("PSLG validation passed.");
+    addLog("Starting Meshing Engine (Delaunay / mapped preview)...");
     addLog(
       `Boundary summary: 1 outer loop, ${pslg.holeLoops.length} holes, ${pslg.totalSegments} total segments.`,
     );
@@ -439,11 +642,12 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
           elementType,
           holeLoops,
           maxLength,
+          minAngle: thetaMin,
           outerLoop,
         });
         setMeshPreview(nextPreview);
-        addLog(`Generated ${nextPreview.nodes.length} nodes from the current sketch.`);
-        addLog("Interactive mesh preview refreshed.");
+        addLog(`Generated ${nextPreview.nodes.length} nodes and ${nextPreview.elements.length} ${elementType} elements.`);
+        addLog("Quality analysis and connectivity matrices refreshed.");
       } catch (error) {
         const message =
           error instanceof Error
@@ -469,10 +673,13 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     errorData: meshAnalysis.errorData,
     generatedSegments,
     geometryReady,
+    handleExportMesh,
     handleGenerateMesh,
+    handleImportSample,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleValidatePSLG,
     hasDraft,
     hasMesh,
     holeLoops,
@@ -486,6 +693,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     meshStats: meshAnalysis.stats,
     mousePos,
     outerLoop,
+    pslgValidation,
     removeLastStep,
     resetGeometry,
     resetZoom,

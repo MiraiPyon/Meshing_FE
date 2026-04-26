@@ -18,7 +18,7 @@ const DashboardPanels = lazy(async () => {
 
 function DashboardPanelsFallback() {
   return (
-    <div className="z-20 flex w-80 shrink-0 flex-col overflow-y-auto border-l border-white/5 bg-[#050816] shadow-2xl">
+    <div className="z-20 flex w-[320px] shrink-0 flex-col overflow-y-auto rounded-lg border border-blue-500/35 bg-[#050816] shadow-2xl">
       <div className="space-y-6 p-6">
         <Skeleton className="h-4 w-32 bg-white/10" />
         <Skeleton className="h-24 w-full bg-white/10" />
@@ -45,48 +45,49 @@ export function Dashboard() {
     <div className="h-screen w-full overflow-hidden bg-[#020617] font-sans text-zinc-300">
       <div className="flex h-full">
         <DashboardSidebar
-          activeTool={dashboard.activeTool}
           resetGeometry={dashboard.resetGeometry}
-          setActiveTool={dashboard.setActiveTool}
-          setDraftType={dashboard.setDraftType}
         />
 
         <div className="flex min-w-0 flex-1 flex-col bg-[#050816]">
           <DashboardHeader
-            cancelCurrentSketch={dashboard.cancelCurrentSketch}
-            closeCurrentShape={dashboard.closeCurrentShape}
-            deleteSelectedShape={dashboard.deleteSelectedShape}
-            draftReadyToClose={dashboard.draftReadyToClose}
-            handleGenerateMesh={dashboard.handleGenerateMesh}
-            hasDraft={dashboard.hasDraft}
-            isMeshing={dashboard.isMeshing}
-            isSketching={dashboard.isSketching}
             onLogout={handleLogout}
             profile={profile}
-            removeLastStep={dashboard.removeLastStep}
-            selectedPoint={dashboard.selectedPoint}
           />
 
-          <div className="relative flex min-h-0 flex-1 flex-col md:flex-row">
+          <div className="relative flex min-h-0 flex-1 gap-3 p-3">
             <DashboardWorkspacePane
               activeTool={dashboard.activeTool}
+              cancelCurrentSketch={dashboard.cancelCurrentSketch}
+              closeCurrentShape={dashboard.closeCurrentShape}
+              deleteSelectedShape={dashboard.deleteSelectedShape}
               draftPointCount={dashboard.draftPointCount}
+              draftReadyToClose={dashboard.draftReadyToClose}
               draftStrokes={dashboard.draftStrokes}
               draftType={dashboard.draftType}
               geometryReady={dashboard.geometryReady}
+              handleExportMesh={dashboard.handleExportMesh}
+              handleImportSample={dashboard.handleImportSample}
               handleMouseDown={dashboard.handleMouseDown}
               handleMouseMove={dashboard.handleMouseMove}
               handleMouseUp={dashboard.handleMouseUp}
+              handleValidatePSLG={dashboard.handleValidatePSLG}
+              hasDraft={dashboard.hasDraft}
               hasMesh={dashboard.hasMesh}
               holeLoops={dashboard.holeLoops}
+              isMeshing={dashboard.isMeshing}
               isSketching={dashboard.isSketching}
               logs={dashboard.logs}
               meshEdges={dashboard.meshEdges}
               meshNodes={dashboard.meshNodes}
+              meshPreview={dashboard.meshPreview}
               mousePos={dashboard.mousePos}
               outerLoop={dashboard.outerLoop}
+              pslgValidation={dashboard.pslgValidation}
+              removeLastStep={dashboard.removeLastStep}
               resetZoom={dashboard.resetZoom}
               selectedPoint={dashboard.selectedPoint}
+              setActiveTool={dashboard.setActiveTool}
+              setDraftType={dashboard.setDraftType}
               zoomIn={dashboard.zoomIn}
               zoomLevel={dashboard.zoomLevel}
               zoomOut={dashboard.zoomOut}
@@ -94,25 +95,22 @@ export function Dashboard() {
 
             <Suspense fallback={<DashboardPanelsFallback />}>
               <DashboardPanels
-                activeTool={dashboard.activeTool}
-                draftPointCount={dashboard.draftPointCount}
-                draftStrokes={dashboard.draftStrokes}
                 elementType={dashboard.elementType}
                 errorData={dashboard.errorData}
-                generatedSegments={dashboard.generatedSegments}
+                handleExportMesh={dashboard.handleExportMesh}
+                handleGenerateMesh={dashboard.handleGenerateMesh}
                 hasMesh={dashboard.hasMesh}
-                holeLoops={dashboard.holeLoops}
+                isMeshing={dashboard.isMeshing}
                 maxLength={dashboard.maxLength}
+                meshPreview={dashboard.meshPreview}
                 meshStats={dashboard.meshStats}
-                outerLoop={dashboard.outerLoop}
+                pslgValidation={dashboard.pslgValidation}
                 rlRatio={dashboard.rlRatio}
-                selectedPoint={dashboard.selectedPoint}
                 setElementType={dashboard.setElementType}
                 setMaxLength={dashboard.setMaxLength}
                 setRlRatio={dashboard.setRlRatio}
                 setThetaMin={dashboard.setThetaMin}
                 thetaMin={dashboard.thetaMin}
-                zoomLevel={dashboard.zoomLevel}
               />
             </Suspense>
           </div>

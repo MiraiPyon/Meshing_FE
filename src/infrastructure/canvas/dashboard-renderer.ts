@@ -1,6 +1,6 @@
 import { ERASER_RADIUS, POINT_RADIUS } from "../../modules/workspace/application/constants";
 import type { Point } from "../../modules/geometry/domain/types";
-import type { MeshEdge } from "../../modules/meshing/domain/types";
+import type { MeshEdge, MeshElement, MeshNode } from "../../modules/meshing/domain/types";
 import type {
   DraftType,
   SelectedPoint,
@@ -14,7 +14,8 @@ export type DashboardCanvasModel = {
   hasMesh: boolean;
   holeLoops: Point[][];
   meshEdges: MeshEdge[];
-  meshNodes: Point[];
+  meshElements: MeshElement[];
+  meshNodes: MeshNode[];
   mousePos: Point;
   outerLoop: Point[];
   selectedPoint: SelectedPoint;
@@ -30,6 +31,7 @@ export function renderDashboardCanvas(
     hasMesh,
     holeLoops,
     meshEdges,
+    meshElements,
     meshNodes,
     mousePos,
     outerLoop,
@@ -139,27 +141,30 @@ export function renderDashboardCanvas(
     });
   };
 
-  drawLoop(
-    outerLoop,
-    "#38bdf8",
-    "rgba(56, 189, 248, 0.12)",
-    true,
-    selectedPoint?.type === "outer" ? selectedPoint : null,
-    activeTool === "select",
-  );
+  if (hasMesh && meshElements.length > 0) {
+    meshElements.forEach((element) => {
+      const points = element.nodeIds.map((nodeId) => meshNodes[nodeId - 1]);
+      if (points.some((point) => !point)) {
+        return;
+      }
 
-  holeLoops.forEach((loop, holeIndex) => {
-    drawLoop(
-      loop,
-      "#f87171",
-      "rgba(248, 113, 113, 0.1)",
-      true,
-      selectedPoint?.type === "hole" && selectedPoint.holeIndex === holeIndex
-        ? selectedPoint
-        : null,
-      activeTool === "select",
-    );
-  });
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let index = 1; index < points.length; index += 1) {
+        ctx.lineTo(points[index].x, points[index].y);
+      }
+      ctx.closePath();
+
+      const fillByStatus = {
+        bad: "rgba(248, 113, 113, 0.3)",
+        excellent: "rgba(59, 130, 246, 0.16)",
+        fair: "rgba(250, 204, 21, 0.18)",
+        good: "rgba(16, 185, 129, 0.16)",
+      };
+      ctx.fillStyle = fillByStatus[element.status];
+      ctx.fill();
+    });
+  }
 
   draftStrokes.forEach((stroke) => {
     drawLoop(
@@ -172,7 +177,7 @@ export function renderDashboardCanvas(
 
   if (hasMesh) {
     ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
+    ctx.strokeStyle = "rgba(96, 165, 250, 0.38)";
     meshEdges.forEach(([a, b]) => {
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
@@ -182,11 +187,33 @@ export function renderDashboardCanvas(
 
     meshNodes.forEach((node) => {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
-      ctx.fillStyle = "#34d399";
+      ctx.arc(node.x, node.y, node.boundary ? 2.6 : 2, 0, Math.PI * 2);
+      ctx.fillStyle = node.boundary ? "#22c55e" : "#bfdbfe";
       ctx.fill();
     });
   }
+
+  drawLoop(
+    outerLoop,
+    "#22c55e",
+    "rgba(34, 197, 94, 0.08)",
+    true,
+    selectedPoint?.type === "outer" ? selectedPoint : null,
+    activeTool === "select",
+  );
+
+  holeLoops.forEach((loop, holeIndex) => {
+    drawLoop(
+      loop,
+      "#ef4444",
+      "rgba(239, 68, 68, 0.12)",
+      true,
+      selectedPoint?.type === "hole" && selectedPoint.holeIndex === holeIndex
+        ? selectedPoint
+        : null,
+      activeTool === "select",
+    );
+  });
 
   if (activeTool === "eraser") {
     ctx.beginPath();
