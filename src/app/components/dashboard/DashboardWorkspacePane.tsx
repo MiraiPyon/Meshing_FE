@@ -99,15 +99,15 @@ export function DashboardWorkspacePane({
             How to draw
           </p>
           <p className="mt-3 text-sm text-zinc-200">
-            Chon <span className="font-semibold text-blue-400">Outer Boundary</span>,
-            nhan giu chuot trai va keo de ve duong bao.
+            Choose <span className="font-semibold text-blue-400">Outer Boundary</span>,
+            then hold the left mouse button and drag to draw the boundary.
           </p>
           <p className="mt-2 text-sm text-zinc-400">
-            Khi tha chuot, moi stroke duoc giu doc lap. Bam{" "}
+            When you release the mouse, each stroke is saved independently. Click{" "}
             <span className="font-semibold text-emerald-400">Close Shape</span>{" "}
-            khi ban muon dong hinh. Sau do chon{" "}
-            <span className="font-semibold text-orange-400">Hole</span> de ve lo
-            trong.
+            when you want to close the figure. Then select{" "}
+            <span className="font-semibold text-orange-400">Hole</span> to draw 
+            internal holes.
           </p>
         </div>
 

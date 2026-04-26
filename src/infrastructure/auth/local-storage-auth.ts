@@ -88,7 +88,7 @@ export function createAuthProfileFromParams(
     searchParams.get("given_name") ??
     searchParams.get("display_name") ??
     (email ? email.split("@")[0] : undefined) ??
-    "Nguoi dung Google";
+    "Google User";
 
   const avatar =
     searchParams.get("picture") ?? searchParams.get("avatar") ?? undefined;

@@ -88,10 +88,10 @@ export function DashboardHeader({
             )}
             <div className="leading-tight">
               <div className="text-xs font-semibold text-white">
-                {profile?.name ?? "Nguoi dung Google"}
+                {profile?.name ?? "Google User"}
               </div>
               <div className="text-[10px] text-zinc-500">
-                {profile?.email ?? "Da dang nhap thanh cong"}
+                {profile?.email ?? "Successfully logged in"}
               </div>
             </div>
           </div>
@@ -159,7 +159,7 @@ export function DashboardHeader({
             className="flex items-center space-x-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
-            <span>Dang xuat</span>
+            <span>Logout</span>
           </button>
           <div className="mx-2 h-6 w-px bg-white/10"></div>
           <button
