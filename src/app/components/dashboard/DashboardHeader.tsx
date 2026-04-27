@@ -52,7 +52,7 @@ export function DashboardHeader({
   const [exporting, setExporting] = useState(false);
   const meshAPI = useMeshAPI();
 
-  const handleExport = async (fmt: "json" | "dat" | "csv") => {
+  const handleExport = async (fmt: "json" | "dat" | "csv" | "csv_zip" | "shape") => {
     setExportOpen(false);
     setExporting(true);
     try {
@@ -142,13 +142,13 @@ export function DashboardHeader({
             </button>
             {exportOpen && (
               <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-white/10 bg-[#0d1117] py-1 shadow-xl">
-                {(["json", "dat", "csv"] as const).map((fmt) => (
+                {(["json", "dat", "csv", "csv_zip", "shape"] as const).map((fmt) => (
                   <button
                     key={fmt}
                     onClick={() => handleExport(fmt)}
                     className="w-full px-4 py-2 text-left text-sm text-zinc-300 hover:bg-white/5 hover:text-white"
                   >
-                    .{fmt.toUpperCase()}
+                    {fmt}
                   </button>
                 ))}
               </div>

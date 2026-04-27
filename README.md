@@ -27,7 +27,10 @@ Frontend cho nền tảng Web mô phỏng **Meshing 2D đa phương thức** và
 - **Console log**: hiển thị quá trình meshing real-time
 
 ### Quản lý dự án & Xuất dữ liệu
-- **Export**: JSON / DAT (MATLAB format) / CSV — download trực tiếp từ Dashboard
+- **Export**: JSON / DAT / CSV / CSV_ZIP / SHAPE — download trực tiếp từ Dashboard
+- **Project Snapshots**: save, refresh, load, delete theo user
+- **shape.dat Meshing**: nhập trực tiếp `shape.dat` để backend sinh lưới
+- **Quick FEA**: chạy nhanh bài toán cantilever để kiểm tra nghiệm sơ bộ
 - **Auth**: Google OAuth2 → JWT, auto-refresh khi token hết hạn
 - **Logout**: revoke refresh token trên Backend
 
@@ -132,9 +135,12 @@ Frontend gọi Backend qua `src/services/apiClient.ts`:
 | Category | Methods |
 |----------|---------|
 | **Auth** | `exchangeAuthCode`, `getMe`, `logout` |
-| **Geometry** | `createRectangle`, `createCircle`, `listGeometries`, `deleteGeometry` |
-| **Mesh** | `createMeshFromSketch`, `createDelaunayMesh`, `createQuadMesh`, `getMesh`, `listMeshes`, `deleteMesh`, `exportMesh` |
+| **Geometry** | `createRectangle`, `createCircle`, `createPolygon`, `getGeometry`, `listGeometries`, `deleteGeometry`, `booleanOperation` |
+| **Mesh** | `createMeshFromSketch`, `createMeshFromShapeDat`, `createDelaunayMesh`, `createQuadMesh`, `getMesh`, `listMeshes`, `deleteMesh`, `exportMesh` |
+| **Projects** | `createProject`, `listProjects`, `getProject`, `updateProject`, `deleteProject` |
+| **Health** | `health`, `healthDb` |
 | **FEA** | `solveFEA` |
+| **Realtime** | `connectDashboardWebSocket` |
 
 Auto-refresh: khi nhận HTTP 401, tự động gọi `/api/auth/refresh` rồi retry request.
 
@@ -143,21 +149,30 @@ Auto-refresh: khi nhận HTTP 401, tự động gọi `/api/auth/refresh` rồi 
 ## Mesh Generation Flow
 
 ```
-[User draws shape] → Close Shape → Generate Mesh
-                                         │
-                          ┌── Logged in? ─┤
-                          │               │
-                     [Backend]       [Local preview]
-                          │               │
-          POST /api/mesh/from-sketch      previewRefinement()
-                          │               │
-              BE returns nodes[]         FE sampling
-              + elements[]              + neighbor edges
-                          │               │
-                    ┌─────┴─────┐         │
-                    ▼           ▼         ▼
-              Canvas render   Stats    Canvas render
+[User draws shape OR imports shape.dat] → Generate Mesh
+                                                   │
+                                    ┌── Logged in? ─┤
+                                    │               │
+                               [Backend]       [Local preview]
+                                    │               │
+       POST /api/mesh/from-sketch or /api/mesh/from-shape-dat
+                                    │               │
+                        BE returns nodes[]         FE sampling
+                        + elements[]              + neighbor edges
+                                    │               │
+                              ┌─────┴─────┐         │
+                              ▼           ▼         ▼
+                        Canvas render   Stats    Canvas render
 ```
+
+---
+
+## Dashboard Controls mới
+
+- **shape.dat Meshing**: nhập text `OUTER/HOLE/END`, generate trực tiếp từ backend
+- **Project Snapshots**: Save/Refresh/Load/Delete snapshot theo tài khoản
+- **Quick FEA**: nhập vật liệu + tải tổng, chạy solver nhanh cho kiểm tra ban đầu
+- **Realtime Console**: nhận sự kiện `/api/ws/dashboard` (`mesh_created`) và log trong dashboard
 
 ---
 

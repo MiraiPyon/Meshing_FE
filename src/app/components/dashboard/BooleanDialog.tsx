@@ -107,17 +107,36 @@ export function BooleanDialog({
         name: `boolean_${selectedOp}`,
       });
 
-      const newOuter: Point[] = result.outer_boundary.map(([x, y]) => ({
+      const components =
+        result.components && result.components.length > 0
+          ? result.components
+          : [
+              {
+                outer_boundary: result.outer_boundary,
+                holes: result.holes,
+                area: result.area,
+                num_vertices: result.num_vertices,
+                is_valid: result.is_valid,
+              },
+            ];
+      const selectedComponent = components.reduce((best, current) =>
+        current.area > best.area ? current : best,
+      );
+
+      const newOuter: Point[] = selectedComponent.outer_boundary.map(([x, y]) => ({
         x,
         y,
       }));
-      const newHoles: Point[][] = result.holes.map((hole) =>
+      const newHoles: Point[][] = selectedComponent.holes.map((hole) =>
         hole.map(([x, y]) => ({ x, y })),
       );
 
       addLog(
-        `[Boolean] ${selectedOp}: ${result.num_vertices} vertices, area=${result.area.toFixed(2)}, ${result.holes.length} holes`,
+        `[Boolean] ${selectedOp}: ${selectedComponent.num_vertices} vertices, area=${selectedComponent.area.toFixed(2)}, components=${result.component_count ?? components.length}`,
       );
+      if ((result.component_count ?? components.length) > 1) {
+        addLog("[Boolean] Multi-component result detected. Using largest component for canvas update.");
+      }
       onResult(newOuter, newHoles);
       onClose();
     } catch (err) {

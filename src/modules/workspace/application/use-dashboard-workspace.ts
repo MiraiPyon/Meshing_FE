@@ -29,13 +29,137 @@ import {
   transitionWorkspace,
 } from "./state/workspace-machine";
 import type {
+  CirclePrimitiveInput,
   DraftType,
+  GeometryRecordItem,
+  PrimitiveType,
+  ProjectSnapshotItem,
+  QuickFEAInput,
+  QuickFEASummary,
+  RectanglePrimitiveInput,
   SelectedPoint,
   Tool,
   WorkspaceViewModel,
 } from "./types";
 import type { ElementType } from "../../meshing/domain/types";
 import { useMeshAPI } from "../../../hooks/useMeshAPI";
+import { meshStore } from "../../../store/meshStore";
+import type { GeometryResponse } from "../../../services/apiClient";
+
+const CIRCLE_SEGMENT_COUNT = 64;
+
+function buildRectangleOuterLoop(
+  xMin: number,
+  yMin: number,
+  width: number,
+  height: number,
+): Point[] {
+  return [
+    { x: xMin, y: yMin },
+    { x: xMin + width, y: yMin },
+    { x: xMin + width, y: yMin + height },
+    { x: xMin, y: yMin + height },
+  ];
+}
+
+function buildCircleOuterLoop(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  sampleCount = CIRCLE_SEGMENT_COUNT,
+): Point[] {
+  const points: Point[] = [];
+  for (let i = 0; i < sampleCount; i += 1) {
+    const angle = (2 * Math.PI * i) / sampleCount;
+    points.push({
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+    });
+  }
+  return points;
+}
+
+function geometryToOuterLoop(geometry: GeometryResponse): Point[] {
+  if (geometry.geometry_type === "rectangle") {
+    if (
+      geometry.x_min == null ||
+      geometry.y_min == null ||
+      geometry.width == null ||
+      geometry.height == null
+    ) {
+      throw new Error("Rectangle geometry payload is missing required fields.");
+    }
+    return buildRectangleOuterLoop(
+      geometry.x_min,
+      geometry.y_min,
+      geometry.width,
+      geometry.height,
+    );
+  }
+
+  if (geometry.geometry_type === "circle") {
+    if (
+      geometry.center_x == null ||
+      geometry.center_y == null ||
+      geometry.radius == null
+    ) {
+      throw new Error("Circle geometry payload is missing required fields.");
+    }
+    return buildCircleOuterLoop(
+      geometry.center_x,
+      geometry.center_y,
+      geometry.radius,
+    );
+  }
+
+  const points = geometry.points ?? [];
+  if (!Array.isArray(points) || points.length < 3) {
+    throw new Error("Polygon geometry payload must contain at least 3 points.");
+  }
+
+  return points.map(([x, y]) => ({ x, y }));
+}
+
+function parsePolygonInputText(input: string): {
+  points: number[][] | null;
+  validationError: string | null;
+} {
+  const lines = input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length < 3) {
+    return {
+      points: null,
+      validationError: "Polygon requires at least 3 points (one point per line).",
+    };
+  }
+
+  const points: number[][] = [];
+  for (const line of lines) {
+    const tokens = line.split(/[,\s]+/).filter((token) => token.length > 0);
+    if (tokens.length !== 2) {
+      return {
+        points: null,
+        validationError: `Invalid point format: "${line}". Use "x,y" or "x y".`,
+      };
+    }
+
+    const x = Number(tokens[0]);
+    const y = Number(tokens[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return {
+        points: null,
+        validationError: `Invalid numeric coordinates: "${line}".`,
+      };
+    }
+
+    points.push([x, y]);
+  }
+
+  return { points, validationError: null };
+}
 
 export function useDashboardWorkspace(): WorkspaceViewModel {
   const [machine, dispatchMachine] = useReducer(
@@ -58,6 +182,43 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [meshPreview, setMeshPreview] = useState<ReturnType<typeof generateMesh> | null>(null);
   const [logs, setLogs] = useState<string[]>(DEFAULT_WORKSPACE_LOGS);
+  const [shapeDatText, setShapeDatText] = useState(
+    "OUTER\n0 0\n4 0\n4 2\n0 2\nEND\nHOLE\n1.2 0.6\n2.0 0.6\n2.0 1.4\n1.2 1.4\nEND",
+  );
+  const [projectName, setProjectName] = useState("Sketch Snapshot");
+  const [projectNotes, setProjectNotes] = useState("");
+  const [projectSnapshots, setProjectSnapshots] = useState<ProjectSnapshotItem[]>([]);
+  const [isProjectBusy, setIsProjectBusy] = useState(false);
+  const [isShapeDatMeshing, setIsShapeDatMeshing] = useState(false);
+  const [isRunningFEA, setIsRunningFEA] = useState(false);
+  const [feaSummary, setFeaSummary] = useState<QuickFEASummary | null>(null);
+  const [feaInput, setFeaInputState] = useState<QuickFEAInput>({
+    E: 210e9,
+    nu: 0.3,
+    thickness: 0.01,
+    totalForceFy: -1000,
+    analysisType: "plane_stress",
+  });
+  const [primitiveType, setPrimitiveType] = useState<PrimitiveType>("rectangle");
+  const [primitiveName, setPrimitiveName] = useState("");
+  const [rectangleInput, setRectangleInput] = useState<RectanglePrimitiveInput>({
+    xMin: 100,
+    yMin: 100,
+    width: 320,
+    height: 180,
+  });
+  const [circleInput, setCircleInput] = useState<CirclePrimitiveInput>({
+    centerX: 320,
+    centerY: 240,
+    radius: 120,
+  });
+  const [polygonInputText, setPolygonInputText] = useState(
+    "120,120\n520,120\n520,320\n120,320",
+  );
+  const [geometryRecords, setGeometryRecords] = useState<GeometryRecordItem[]>([]);
+  const [selectedGeometryId, setSelectedGeometryId] = useState<string | null>(null);
+  const [isGeometryBusy, setIsGeometryBusy] = useState(false);
+  const [geometryError, setGeometryError] = useState<string | null>(null);
 
   const draftStrokesRef = useRef<Point[][]>(draftStrokes);
 
@@ -70,6 +231,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const isSketching = machine.mode === "drawing";
   const isMeshing = machine.mode === "meshing";
   const hasMesh = meshPreview !== null;
+  const hasProjectData = projectSnapshots.length > 0;
 
   const geometryReady = outerLoop.length >= 3;
   const draftPointCount = draftStrokes.reduce(
@@ -92,11 +254,30 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
 
   const clearMeshPreview = () => {
     setMeshPreview(null);
+    setFeaSummary(null);
   };
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString("en-GB");
     setLogs((current) => [...current.slice(-11), `[${timestamp}] ${message}`]);
+  };
+
+  const applyGeometryToWorkspace = (geometry: GeometryResponse, source: "created" | "loaded") => {
+    const nextOuterLoop = geometryToOuterLoop(geometry);
+    setOuterLoop(nextOuterLoop);
+    setHoleLoops([]);
+    setDraftStrokes([]);
+    setSelectedPoint(null);
+    setDraggingPoint(null);
+    clearMeshPreview();
+    dispatchMachine({ type: "SYNC_CONTEXT", mode: "idle" });
+    meshStore.clear();
+    meshStore.setGeometryId(geometry.id);
+    setSelectedGeometryId(geometry.id);
+    setGeometryError(null);
+    addLog(
+      `[Geometry] ${source === "created" ? "Created" : "Loaded"} ${geometry.geometry_type} "${geometry.name}".`,
+    );
   };
 
   const getCanvasPoint = (
@@ -195,6 +376,9 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setDraftStrokes([]);
     setSelectedPoint(null);
     setDraggingPoint(null);
+    setSelectedGeometryId(null);
+    setGeometryError(null);
+    meshStore.clear();
     clearMeshPreview();
     dispatchMachine({ type: "RESET" });
     addLog("Geometry workspace cleared.");
@@ -444,6 +628,12 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
         })
         .then((result) => {
           setMeshPreview(result.preview);
+          setSelectedGeometryId(result.geometryId);
+          const pslg = result.rawMesh.pslg;
+          if (pslg?.outer_boundary && pslg?.holes) {
+            setOuterLoop(pslg.outer_boundary.map(([x, y]) => ({ x, y })));
+            setHoleLoops(pslg.holes.map((loop) => loop.map(([x, y]) => ({ x, y }))));
+          }
           addLog(
             `[BE] Generated ${result.nodeCount} nodes, ${result.elementCount} elements (${elementType}).`,
           );
@@ -483,6 +673,436 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     }
   };
 
+  const refreshGeometryRecords = () => {
+    if (!meshAPI.isLoggedIn) {
+      setGeometryRecords([]);
+      setSelectedGeometryId(null);
+      return;
+    }
+
+    setIsGeometryBusy(true);
+    setGeometryError(null);
+    meshAPI
+      .listGeometryRecords()
+      .then((records) => {
+        const nextRecords: GeometryRecordItem[] = records.map((record) => ({
+          id: record.id,
+          name: record.name,
+          geometry_type: record.geometry_type,
+          created_at: record.created_at,
+        }));
+        setGeometryRecords(nextRecords);
+
+        setSelectedGeometryId((current) => {
+          if (current && nextRecords.some((record) => record.id === current)) {
+            return current;
+          }
+          return null;
+        });
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : "Cannot fetch geometry records.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+      })
+      .finally(() => {
+        setIsGeometryBusy(false);
+      });
+  };
+
+  const submitPrimitiveForm = () => {
+    if (!meshAPI.isLoggedIn) {
+      const message = "Login required to create geometry primitives.";
+      setGeometryError(message);
+      addLog(`[Geometry Error] ${message}`);
+      return;
+    }
+
+    const name = primitiveName.trim() || undefined;
+
+    let request: Promise<GeometryResponse>;
+    if (primitiveType === "rectangle") {
+      const { xMin, yMin, width, height } = rectangleInput;
+      if (
+        !Number.isFinite(xMin) ||
+        !Number.isFinite(yMin) ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height)
+      ) {
+        const message = "Rectangle input must contain valid numeric values.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+        return;
+      }
+      if (width <= 0 || height <= 0) {
+        const message = "Rectangle width and height must be > 0.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+        return;
+      }
+
+      request = meshAPI.createRectangle({ name, xMin, yMin, width, height });
+    } else if (primitiveType === "circle") {
+      const { centerX, centerY, radius } = circleInput;
+      if (
+        !Number.isFinite(centerX) ||
+        !Number.isFinite(centerY) ||
+        !Number.isFinite(radius)
+      ) {
+        const message = "Circle input must contain valid numeric values.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+        return;
+      }
+      if (radius <= 0) {
+        const message = "Circle radius must be > 0.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+        return;
+      }
+
+      request = meshAPI.createCircle({ name, centerX, centerY, radius });
+    } else {
+      const parsed = parsePolygonInputText(polygonInputText);
+      if (!parsed.points) {
+        const message = parsed.validationError ?? "Polygon input is invalid.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+        return;
+      }
+
+      request = meshAPI.createPolygon({
+        name,
+        points: parsed.points,
+        closed: true,
+      });
+    }
+
+    setIsGeometryBusy(true);
+    setGeometryError(null);
+    request
+      .then((createdGeometry) => {
+        applyGeometryToWorkspace(createdGeometry, "created");
+        setGeometryRecords((current) => [
+          {
+            id: createdGeometry.id,
+            name: createdGeometry.name,
+            geometry_type: createdGeometry.geometry_type,
+            created_at: createdGeometry.created_at,
+          },
+          ...current.filter((item) => item.id !== createdGeometry.id),
+        ]);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Create geometry failed.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+      })
+      .finally(() => {
+        setIsGeometryBusy(false);
+      });
+  };
+
+  const loadGeometryRecord = (geometryId: string) => {
+    if (!meshAPI.isLoggedIn) {
+      const message = "Login required to load geometry records.";
+      setGeometryError(message);
+      addLog(`[Geometry Error] ${message}`);
+      return;
+    }
+
+    setIsGeometryBusy(true);
+    setGeometryError(null);
+    meshAPI
+      .getGeometryRecord(geometryId)
+      .then((geometry) => {
+        applyGeometryToWorkspace(geometry, "loaded");
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Load geometry failed.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+      })
+      .finally(() => {
+        setIsGeometryBusy(false);
+      });
+  };
+
+  const deleteGeometryRecord = (geometryId: string) => {
+    if (!meshAPI.isLoggedIn) {
+      const message = "Login required to delete geometry records.";
+      setGeometryError(message);
+      addLog(`[Geometry Error] ${message}`);
+      return;
+    }
+
+    setIsGeometryBusy(true);
+    setGeometryError(null);
+    meshAPI
+      .deleteGeometryRecord(geometryId)
+      .then(() => {
+        setGeometryRecords((current) =>
+          current.filter((item) => item.id !== geometryId),
+        );
+        addLog(`[Geometry] Deleted geometry ${geometryId}.`);
+
+        if (
+          selectedGeometryId === geometryId ||
+          meshStore.getGeometryId() === geometryId
+        ) {
+          setOuterLoop([]);
+          setHoleLoops([]);
+          setDraftStrokes([]);
+          setSelectedPoint(null);
+          setDraggingPoint(null);
+          clearMeshPreview();
+          dispatchMachine({ type: "SYNC_CONTEXT", mode: "idle" });
+          meshStore.clear();
+          setSelectedGeometryId(null);
+          addLog("[Geometry] Active geometry was removed and canvas was reset.");
+        }
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Delete geometry failed.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+      })
+      .finally(() => {
+        setIsGeometryBusy(false);
+      });
+  };
+
+  const refreshProjectSnapshots = () => {
+    if (!meshAPI.isLoggedIn) {
+      setProjectSnapshots([]);
+      return;
+    }
+
+    setIsProjectBusy(true);
+    meshAPI
+      .listProjectSnapshots()
+      .then((projects) => {
+        setProjectSnapshots(projects);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Cannot fetch project snapshots";
+        addLog(`[Project Error] ${msg}`);
+      })
+      .finally(() => {
+        setIsProjectBusy(false);
+      });
+  };
+
+  const saveProjectSnapshot = () => {
+    if (!meshAPI.isLoggedIn) {
+      addLog("Login required to save project snapshots.");
+      return;
+    }
+
+    const trimmedName = projectName.trim();
+    if (!trimmedName) {
+      addLog("Enter a project name before saving.");
+      return;
+    }
+
+    setIsProjectBusy(true);
+    meshAPI
+      .createProjectSnapshot({
+        name: trimmedName,
+        notes: projectNotes.trim() || undefined,
+        elementType,
+        meshingParams: {
+          thetaMin,
+          rlRatio,
+          maxLength,
+          elementType,
+          hasMesh,
+        },
+      })
+      .then((project) => {
+        setProjectSnapshots((current) => [project, ...current.filter((item) => item.id !== project.id)]);
+        addLog(`[Project] Saved snapshot \"${project.name}\".`);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Save project snapshot failed";
+        addLog(`[Project Error] ${msg}`);
+      })
+      .finally(() => {
+        setIsProjectBusy(false);
+      });
+  };
+
+  const loadProjectSnapshot = (projectId: string) => {
+    if (!meshAPI.isLoggedIn) {
+      addLog("Login required to load saved snapshots.");
+      return;
+    }
+
+    setIsProjectBusy(true);
+    meshAPI
+      .loadProjectSnapshot(projectId)
+      .then((loaded) => {
+        setProjectName(loaded.project.name);
+        setProjectNotes(loaded.project.notes ?? "");
+
+        if (loaded.preview) {
+          setMeshPreview(loaded.preview);
+          addLog(`[Project] Loaded mesh ${loaded.meshId} from snapshot \"${loaded.project.name}\".`);
+        } else {
+          setMeshPreview(null);
+          addLog(`[Project] Snapshot \"${loaded.project.name}\" has no mesh yet.`);
+        }
+
+        if (loaded.elementType) {
+          setElementType(loaded.elementType);
+        }
+
+        setOuterLoop(loaded.outerLoop ?? []);
+        setHoleLoops(loaded.holeLoops ?? []);
+
+        setDraftStrokes([]);
+        setSelectedPoint(null);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Load project snapshot failed";
+        addLog(`[Project Error] ${msg}`);
+      })
+      .finally(() => {
+        setIsProjectBusy(false);
+      });
+  };
+
+  const deleteProjectSnapshot = (projectId: string) => {
+    if (!meshAPI.isLoggedIn) {
+      addLog("Login required to delete saved snapshots.");
+      return;
+    }
+
+    setIsProjectBusy(true);
+    meshAPI
+      .deleteProjectSnapshot(projectId)
+      .then(() => {
+        setProjectSnapshots((current) => current.filter((item) => item.id !== projectId));
+        addLog(`[Project] Deleted snapshot ${projectId}.`);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Delete project snapshot failed";
+        addLog(`[Project Error] ${msg}`);
+      })
+      .finally(() => {
+        setIsProjectBusy(false);
+      });
+  };
+
+  const generateMeshFromShapeDat = () => {
+    if (!meshAPI.isLoggedIn) {
+      addLog("Login required to generate mesh from shape.dat.");
+      return;
+    }
+    if (!shapeDatText.trim()) {
+      addLog("shape.dat content is empty.");
+      return;
+    }
+
+    setIsShapeDatMeshing(true);
+    dispatchMachine({ type: "MESH_STARTED" });
+    addLog("Submitting shape.dat to backend...");
+    meshAPI
+      .generateMeshFromShapeDat(shapeDatText, {
+        maxLength,
+        thetaMin,
+      })
+      .then((result) => {
+        setMeshPreview(result.preview);
+        setElementType("T3");
+        setSelectedGeometryId(result.geometryId);
+
+        const pslg = result.rawMesh.pslg;
+        if (pslg?.outer_boundary && pslg?.holes) {
+          setOuterLoop(pslg.outer_boundary.map(([x, y]) => ({ x, y })));
+          setHoleLoops(pslg.holes.map((loop) => loop.map(([x, y]) => ({ x, y }))));
+          setDraftStrokes([]);
+          setSelectedPoint(null);
+        }
+
+        addLog(`[BE] shape.dat meshed: ${result.nodeCount} nodes, ${result.elementCount} elements.`);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "shape.dat meshing failed";
+        addLog(`[BE Error] ${msg}`);
+      })
+      .finally(() => {
+        setIsShapeDatMeshing(false);
+        dispatchMachine({ type: "MESH_FINISHED" });
+      });
+  };
+
+  const runQuickFEA = () => {
+    if (!meshAPI.isLoggedIn) {
+      addLog("Login required to run FEA.");
+      return;
+    }
+
+    setIsRunningFEA(true);
+    addLog("Running quick cantilever FEA setup...");
+    meshAPI
+      .solveQuickCantilever(feaInput)
+      .then((response) => {
+        setFeaSummary({
+          message: response.message,
+          maxDisplacement: response.result.max_displacement,
+          maxVonMises: response.result.max_von_mises_stress,
+          sumReactionX: response.result.sum_reaction_x ?? null,
+          sumReactionY: response.result.sum_reaction_y ?? null,
+          nodeCount: response.result.node_count,
+          elementCount: response.result.element_count,
+        });
+        addLog(
+          `[FEA] Solved. max|u|=${response.result.max_displacement.toExponential(3)}, max_vm=${response.result.max_von_mises_stress.toExponential(3)}.`,
+        );
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "FEA solve failed";
+        addLog(`[FEA Error] ${msg}`);
+      })
+      .finally(() => {
+        setIsRunningFEA(false);
+      });
+  };
+
+  useEffect(() => {
+    refreshGeometryRecords();
+  }, [meshAPI.isLoggedIn]);
+
+  useEffect(() => {
+    refreshProjectSnapshots();
+  }, [meshAPI.isLoggedIn]);
+
+  useEffect(() => {
+    if (!meshAPI.isLoggedIn) {
+      return;
+    }
+
+    const unsubscribe = meshAPI.subscribeDashboardEvents(
+      (event) => {
+        const meshId = typeof event.data?.mesh_id === "string" ? event.data.mesh_id : "n/a";
+        addLog(`[WS] ${event.event}: mesh_id=${meshId}`);
+      },
+      () => {
+        addLog("[WS Error] Dashboard realtime channel disconnected.");
+      },
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [meshAPI.isLoggedIn]);
+
+  const setFeaInput = (input: QuickFEAInput) => {
+    setFeaInputState(input);
+  };
+
   const applyBooleanResult = (outer: Point[], holes: Point[][]) => {
     setOuterLoop(outer);
     setHoleLoops(holes);
@@ -506,6 +1126,8 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     elementType,
     errorData: meshAnalysis.errorData,
     generatedSegments,
+    geometryError,
+    geometryRecords,
     geometryReady,
     handleGenerateMesh,
     handleMouseDown,
@@ -513,8 +1135,13 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     handleMouseUp,
     hasDraft,
     hasMesh,
+    hasProjectData,
     holeLoops,
+    isGeometryBusy,
     isMeshing,
+    isProjectBusy,
+    isRunningFEA,
+    isShapeDatMeshing,
     isSketching,
     logs,
     maxLength,
@@ -524,17 +1151,48 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     meshStats: meshAnalysis.stats,
     mousePos,
     outerLoop,
+    polygonInputText,
+    primitiveName,
+    primitiveType,
+    projectName,
+    projectNotes,
+    projectSnapshots,
     removeLastStep,
+    runQuickFEA,
     resetGeometry,
     resetZoom,
     rlRatio,
+    selectedGeometryId,
     selectedPoint,
+    setCircleInput,
+    setFeaInput,
     setActiveTool,
+    setPolygonInputText,
+    setPrimitiveName,
+    setPrimitiveType,
+    setRectangleInput,
     setDraftType: setWorkspaceDraftType,
     setElementType,
     setMaxLength,
+    setProjectName,
+    setProjectNotes,
     setRlRatio,
+    setShapeDatText,
     setThetaMin,
+    circleInput,
+    rectangleInput,
+    shapeDatText,
+    submitPrimitiveForm,
+    generateMeshFromShapeDat,
+    loadGeometryRecord,
+    deleteGeometryRecord,
+    refreshGeometryRecords,
+    saveProjectSnapshot,
+    loadProjectSnapshot,
+    deleteProjectSnapshot,
+    refreshProjectSnapshots,
+    feaInput,
+    feaSummary,
     thetaMin,
     zoomIn,
     zoomLevel,
