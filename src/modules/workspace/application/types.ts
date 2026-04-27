@@ -14,7 +14,7 @@ export type ProjectSnapshotItem = {
   updated_at: string;
 };
 
-export type PrimitiveType = "rectangle" | "circle" | "polygon";
+export type PrimitiveType = "rectangle" | "circle" | "triangle" | "polygon";
 
 export type RectanglePrimitiveInput = {
   xMin: number;
@@ -27,6 +27,10 @@ export type CirclePrimitiveInput = {
   centerX: number;
   centerY: number;
   radius: number;
+};
+
+export type TrianglePrimitiveInput = {
+  points: [Point, Point, Point];
 };
 
 export type GeometryRecordItem = {
@@ -134,12 +138,16 @@ export type WorkspaceViewModel = {
   meshEdges: MeshEdge[];
   meshNodes: Point[];
   meshPreview: MeshPreview | null;
+  meshQuality: Record<string, unknown> | null;
   meshStats: MeshStats;
+  meshConnectivityMatrices: Record<string, unknown> | null;
   mousePos: Point;
   outerLoop: Loop;
   polygonInputText: string;
   primitiveName: string;
   primitiveType: PrimitiveType;
+  quadNx: number;
+  quadNy: number;
   projectName: string;
   projectNotes: string;
   projectSnapshots: ProjectSnapshotItem[];
@@ -158,16 +166,20 @@ export type WorkspaceViewModel = {
   setPrimitiveName: (name: string) => void;
   setPrimitiveType: (primitiveType: PrimitiveType) => void;
   setRectangleInput: (input: RectanglePrimitiveInput) => void;
+  setTriangleInput: (input: TrianglePrimitiveInput) => void;
   setDraftType: (draftType: DraftType) => void;
   setElementType: (elementType: ElementType) => void;
   setMaxLength: (value: number) => void;
   setProjectName: (name: string) => void;
   setProjectNotes: (notes: string) => void;
+  setQuadNx: (value: number) => void;
+  setQuadNy: (value: number) => void;
   setRlRatio: (value: number) => void;
   setShapeDatText: (text: string) => void;
   setThetaMin: (value: number) => void;
   circleInput: CirclePrimitiveInput;
   rectangleInput: RectanglePrimitiveInput;
+  triangleInput: TrianglePrimitiveInput;
   shapeDatText: string;
   submitPrimitiveForm: () => void;
   generateMeshFromShapeDat: () => void;

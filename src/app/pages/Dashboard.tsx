@@ -149,10 +149,14 @@ export function Dashboard() {
                 loadProjectSnapshot={dashboard.loadProjectSnapshot}
                 maxLength={dashboard.maxLength}
                 meshStats={dashboard.meshStats}
+                meshQuality={dashboard.meshQuality}
+                meshConnectivityMatrices={dashboard.meshConnectivityMatrices}
                 outerLoop={dashboard.outerLoop}
                 projectName={dashboard.projectName}
                 projectNotes={dashboard.projectNotes}
                 projectSnapshots={dashboard.projectSnapshots}
+                quadNx={dashboard.quadNx}
+                quadNy={dashboard.quadNy}
                 refreshProjectSnapshots={dashboard.refreshProjectSnapshots}
                 runQuickFEA={dashboard.runQuickFEA}
                 saveProjectSnapshot={dashboard.saveProjectSnapshot}
@@ -167,6 +171,8 @@ export function Dashboard() {
                 setPrimitiveType={dashboard.setPrimitiveType}
                 setProjectName={dashboard.setProjectName}
                 setProjectNotes={dashboard.setProjectNotes}
+                setQuadNx={dashboard.setQuadNx}
+                setQuadNy={dashboard.setQuadNy}
                 setRectangleInput={dashboard.setRectangleInput}
                 setRlRatio={dashboard.setRlRatio}
                 setShapeDatText={dashboard.setShapeDatText}
@@ -174,6 +180,8 @@ export function Dashboard() {
                 shapeDatText={dashboard.shapeDatText}
                 submitPrimitiveForm={dashboard.submitPrimitiveForm}
                 thetaMin={dashboard.thetaMin}
+                triangleInput={dashboard.triangleInput}
+                setTriangleInput={dashboard.setTriangleInput}
                 zoomLevel={dashboard.zoomLevel}
               />
             </Suspense>

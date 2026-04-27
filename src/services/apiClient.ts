@@ -17,7 +17,7 @@ import {
 export type GeometryResponse = {
   id: string;
   name: string;
-  geometry_type: "rectangle" | "circle" | "polygon";
+  geometry_type: "rectangle" | "circle" | "triangle" | "polygon";
   x_min?: number | null;
   y_min?: number | null;
   width?: number | null;
@@ -274,6 +274,15 @@ export const apiClient = {
     return handleResponse(res);
   },
 
+  async createTriangle(data: { name?: string; points: number[][] }): Promise<GeometryResponse> {
+    const res = await withAuth(`${BASE_URL}/geometry/triangle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
   async createPolygon(data: { name?: string; points: number[][]; closed?: boolean }): Promise<GeometryResponse> {
     const res = await withAuth(`${BASE_URL}/geometry/polygon`, {
       method: "POST",
@@ -325,6 +334,7 @@ export const apiClient = {
     max_area?: number;
     min_angle?: number;
     max_edge_length?: number;
+    max_circumradius_ratio?: number;
   }): Promise<MeshResponse> {
     const res = await withAuth(`${BASE_URL}/mesh/delaunay`, {
       method: "POST",
@@ -351,6 +361,7 @@ export const apiClient = {
     max_area?: number;
     min_angle?: number;
     max_edge_length?: number;
+    max_circumradius_ratio?: number;
     nx?: number;
     ny?: number;
   }): Promise<MeshResponse> {
@@ -368,6 +379,7 @@ export const apiClient = {
     max_area?: number;
     min_angle?: number;
     max_edge_length?: number;
+    max_circumradius_ratio?: number;
   }): Promise<MeshResponse> {
     const res = await withAuth(`${BASE_URL}/mesh/from-shape-dat`, {
       method: "POST",

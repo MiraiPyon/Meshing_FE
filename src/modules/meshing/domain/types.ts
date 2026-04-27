@@ -6,6 +6,9 @@ export type MeshEdge = Edge;
 
 export type MeshPreview = {
   boundarySegments: number;
+  connectivityMatrices?: Record<string, unknown> | null;
+  dashboard?: Record<string, unknown> | null;
+  dofTotal?: number | null;
   edges: MeshEdge[];
   elementType: ElementType;
   executionTime: number;

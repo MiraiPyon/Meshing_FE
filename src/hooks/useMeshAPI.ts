@@ -128,6 +128,9 @@ export function beMeshToPreview(
 
   return {
     boundarySegments: beMesh.element_count,
+    connectivityMatrices: beMesh.connectivity_matrices ?? null,
+    dashboard: beMesh.dashboard ?? null,
+    dofTotal: beMesh.dof_total ?? null,
     edges,
     elementType,
     executionTime: Date.now() - startMs,
@@ -192,7 +195,7 @@ export function useMeshAPI() {
     outerLoop: Point[],
     holeLoops: Point[][],
     elementType: ElementType,
-    params: { maxLength: number; thetaMin: number; nx?: number; ny?: number },
+    params: { maxLength: number; thetaMin: number; rlRatio?: number; nx?: number; ny?: number },
   ): Promise<BackendMeshResult> {
     const startMs = Date.now();
 
@@ -216,7 +219,12 @@ export function useMeshAPI() {
     const bboxHeight = Math.max(bbox.yMax - bbox.yMin, 0);
     const bboxDiag = Math.hypot(bboxWidth, bboxHeight);
     const adaptiveMinEdge = bboxDiag > 0 ? bboxDiag / 40 : params.maxLength;
-    const effectiveMaxLength = Math.max(params.maxLength, adaptiveMinEdge);
+    const isCanvasScaleGeometry = bboxDiag > 20 && params.maxLength < 1;
+    const scaledCanvasMaxLength = isCanvasScaleGeometry
+      ? params.maxLength * bboxDiag
+      : params.maxLength;
+    const canvasSafeMinEdge = isCanvasScaleGeometry ? bboxDiag / 4 : adaptiveMinEdge;
+    const effectiveMaxLength = Math.max(scaledCanvasMaxLength, canvasSafeMinEdge);
     const minDistance = bboxDiag > 0 ? Math.max(bboxDiag / 400, 0.5) : 0.5;
     const collinearTolerance = bboxDiag > 0 ? Math.max(bboxDiag / 600, 0.25) : 0.25;
 
@@ -247,6 +255,7 @@ export function useMeshAPI() {
       max_area: elementType === "T3" ? maxArea : undefined,
       min_angle: elementType === "T3" ? params.thetaMin : undefined,
       max_edge_length: elementType === "T3" ? effectiveMaxLength : undefined,
+      max_circumradius_ratio: elementType === "T3" ? params.rlRatio : undefined,
       nx: params.nx ?? 10,
       ny: params.ny ?? 10,
     });
@@ -260,7 +269,7 @@ export function useMeshAPI() {
 
   async function generateMeshFromShapeDat(
     shapeDat: string,
-    params: { maxLength: number; thetaMin: number; name?: string },
+    params: { maxLength: number; thetaMin: number; rlRatio?: number; name?: string },
   ): Promise<BackendMeshResult> {
     const startMs = Date.now();
     const maxArea = (params.maxLength ** 2 * Math.sqrt(3)) / 4;
@@ -270,6 +279,7 @@ export function useMeshAPI() {
       max_area: maxArea,
       min_angle: params.thetaMin,
       max_edge_length: params.maxLength,
+      max_circumradius_ratio: params.rlRatio,
     });
 
     meshStore.setMeshId(mesh.id);
@@ -311,6 +321,13 @@ export function useMeshAPI() {
       center_y: data.centerY,
       radius: data.radius,
     });
+  }
+
+  async function createTriangle(data: {
+    name?: string;
+    points: number[][];
+  }): Promise<GeometryResponse> {
+    return apiClient.createTriangle(data);
   }
 
   async function createPolygon(data: {
@@ -478,6 +495,7 @@ export function useMeshAPI() {
   return {
     createRectangle,
     createCircle,
+    createTriangle,
     createPolygon,
     listGeometryRecords,
     getGeometryRecord,

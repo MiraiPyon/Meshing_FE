@@ -39,6 +39,7 @@ import type {
   QuickFEASummary,
   RectanglePrimitiveInput,
   SelectedPoint,
+  TrianglePrimitiveInput,
   Tool,
   WorkspaceViewModel,
 } from "./types";
@@ -128,7 +129,7 @@ function geometryToOuterLoop(geometry: GeometryResponse): Point[] {
 
   const points = geometry.points ?? [];
   if (!Array.isArray(points) || points.length < 3) {
-    throw new Error("Polygon geometry payload must contain at least 3 points.");
+  throw new Error("Polygon/Triangle geometry payload must contain at least 3 points.");
   }
 
   return points.map(([x, y]) => ({ x, y }));
@@ -184,8 +185,10 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const meshAPI = useMeshAPI();
 
   const [thetaMin, setThetaMin] = useState(20.7);
-  const [rlRatio, setRlRatio] = useState(1.414);
+  const [rlRatio, setRlRatioState] = useState(Math.SQRT2);
   const [maxLength, setMaxLength] = useState(0.18);
+  const [quadNx, setQuadNx] = useState(10);
+  const [quadNy, setQuadNy] = useState(10);
   const [elementType, setElementType] = useState<ElementType>("T3");
   const [outerLoop, setOuterLoop] = useState<Point[]>([]);
   const [holeLoops, setHoleLoops] = useState<Point[][]>([]);
@@ -227,6 +230,13 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     centerX: 320,
     centerY: 240,
     radius: 120,
+  });
+  const [triangleInput, setTriangleInput] = useState<TrianglePrimitiveInput>({
+    points: [
+      { x: 180, y: 340 },
+      { x: 340, y: 120 },
+      { x: 520, y: 340 },
+    ],
   });
   const [polygonInputText, setPolygonInputText] = useState(
     "120,120\n520,120\n520,320\n120,320",
@@ -270,6 +280,13 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
 
   const meshNodes = meshPreview?.nodes ?? [];
   const meshEdges = meshPreview?.edges ?? [];
+  const meshQuality =
+    (meshPreview?.dashboard?.mesh_quality as Record<string, unknown> | undefined) ?? null;
+  const meshConnectivityMatrices = meshPreview?.connectivityMatrices ?? null;
+
+  const setRlRatio = (value: number) => {
+    setRlRatioState(Math.min(Math.max(value, 1.0), Math.SQRT2));
+  };
 
   const clearMeshPreview = () => {
     setMeshPreview(null);
@@ -792,6 +809,9 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       meshAPI
         .generateMeshFromSketch(outerLoop, holeLoops, elementType, {
           maxLength,
+          nx: quadNx,
+          ny: quadNy,
+          rlRatio,
           thetaMin,
         })
         .then((result) => {
@@ -931,6 +951,18 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       }
 
       request = meshAPI.createCircle({ name, centerX, centerY, radius });
+    } else if (primitiveType === "triangle") {
+      const points = triangleInput.points.map((point) => [point.x, point.y]);
+      if (
+        points.some(([x, y]) => !Number.isFinite(x) || !Number.isFinite(y))
+      ) {
+        const message = "Triangle input must contain valid numeric coordinates.";
+        setGeometryError(message);
+        addLog(`[Geometry Error] ${message}`);
+        return;
+      }
+
+      request = meshAPI.createTriangle({ name, points });
     } else {
       const parsed = parsePolygonInputText(polygonInputText);
       if (!parsed.points) {
@@ -1179,6 +1211,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     meshAPI
       .generateMeshFromShapeDat(shapeDatText, {
         maxLength,
+        rlRatio,
         thetaMin,
       })
       .then((result) => {
@@ -1319,7 +1352,9 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     meshEdges,
     meshNodes,
     meshPreview,
+    meshQuality,
     meshStats: meshAnalysis.stats,
+    meshConnectivityMatrices,
     mousePos,
     outerLoop,
     polygonInputText,
@@ -1328,6 +1363,8 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     projectName,
     projectNotes,
     projectSnapshots,
+    quadNx,
+    quadNy,
     removeLastStep,
     runQuickFEA,
     resetGeometry,
@@ -1343,16 +1380,20 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setPrimitiveName,
     setPrimitiveType,
     setRectangleInput,
+    setTriangleInput,
     setDraftType: setWorkspaceDraftType,
     setElementType,
     setMaxLength,
     setProjectName,
     setProjectNotes,
+    setQuadNx,
+    setQuadNy,
     setRlRatio,
     setShapeDatText,
     setThetaMin,
     circleInput,
     rectangleInput,
+    triangleInput,
     shapeDatText,
     submitPrimitiveForm,
     generateMeshFromShapeDat,

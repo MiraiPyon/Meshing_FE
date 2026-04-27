@@ -54,10 +54,14 @@ type DashboardPanelsProps = Pick<
   | "loadProjectSnapshot"
   | "maxLength"
   | "meshStats"
+  | "meshQuality"
+  | "meshConnectivityMatrices"
   | "outerLoop"
   | "projectName"
   | "projectNotes"
   | "projectSnapshots"
+  | "quadNx"
+  | "quadNy"
   | "refreshProjectSnapshots"
   | "runQuickFEA"
   | "saveProjectSnapshot"
@@ -73,12 +77,16 @@ type DashboardPanelsProps = Pick<
   | "setMaxLength"
   | "setProjectName"
   | "setProjectNotes"
+  | "setQuadNx"
+  | "setQuadNy"
   | "setRlRatio"
   | "setShapeDatText"
   | "setThetaMin"
   | "shapeDatText"
   | "submitPrimitiveForm"
   | "thetaMin"
+  | "triangleInput"
+  | "setTriangleInput"
   | "zoomLevel"
 >;
 
@@ -130,10 +138,14 @@ export function DashboardPanels({
   loadProjectSnapshot,
   maxLength,
   meshStats,
+  meshQuality,
+  meshConnectivityMatrices,
   outerLoop,
   projectName,
   projectNotes,
   projectSnapshots,
+  quadNx,
+  quadNy,
   refreshProjectSnapshots,
   runQuickFEA,
   saveProjectSnapshot,
@@ -149,12 +161,16 @@ export function DashboardPanels({
   setMaxLength,
   setProjectName,
   setProjectNotes,
+  setQuadNx,
+  setQuadNy,
   setRlRatio,
   setShapeDatText,
   setThetaMin,
   shapeDatText,
   submitPrimitiveForm,
   thetaMin,
+  triangleInput,
+  setTriangleInput,
   zoomLevel,
 }: DashboardPanelsProps) {
   const updateFeaInput = <K extends keyof typeof feaInput>(
@@ -177,6 +193,40 @@ export function DashboardPanels({
   ) => {
     setCircleInput({ ...circleInput, [key]: value });
   };
+
+  const updateTrianglePoint = (
+    pointIndex: 0 | 1 | 2,
+    axis: "x" | "y",
+    value: number,
+  ) => {
+    setTriangleInput({
+      points: triangleInput.points.map((point, index) =>
+        index === pointIndex ? { ...point, [axis]: value } : point,
+      ) as typeof triangleInput.points,
+    });
+  };
+
+  const getMetricNumber = (key: string) => {
+    const value = meshQuality?.[key];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  };
+
+  const getMetricBoolean = (key: string) => {
+    const value = meshQuality?.[key];
+    return typeof value === "boolean" ? value : null;
+  };
+
+  const matrixRows = (key: string) => {
+    const value = meshConnectivityMatrices?.[key];
+    return Array.isArray(value) ? value.slice(0, 4) : [];
+  };
+
+  const formatMatrixRow = (row: unknown) =>
+    Array.isArray(row)
+      ? row
+          .map((cell) => (Array.isArray(cell) ? `[${cell.join(" ")}]` : String(cell)))
+          .join("  ")
+      : String(row);
 
   return (
     <div className="z-20 flex w-80 shrink-0 flex-col overflow-y-auto border-l border-white/5 bg-[#050816] shadow-2xl">
@@ -258,8 +308,8 @@ export function DashboardPanels({
         </h3>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            {(["rectangle", "circle", "polygon"] as const).map((type) => (
+          <div className="grid grid-cols-4 gap-2">
+            {(["rectangle", "circle", "triangle", "polygon"] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setPrimitiveType(type)}
@@ -351,6 +401,41 @@ export function DashboardPanels({
                   className="w-full rounded-md border border-white/10 bg-[#070b16] px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-blue-500/50"
                 />
               </div>
+            </div>
+          ) : null}
+
+          {primitiveType === "triangle" ? (
+            <div className="space-y-2">
+              {triangleInput.points.map((point, index) => (
+                <div key={index} className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-wider text-zinc-500">
+                      p{index + 1}_x
+                    </label>
+                    <input
+                      type="number"
+                      value={point.x}
+                      onChange={(event) =>
+                        updateTrianglePoint(index as 0 | 1 | 2, "x", Number(event.target.value))
+                      }
+                      className="w-full rounded-md border border-white/10 bg-[#070b16] px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-blue-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-wider text-zinc-500">
+                      p{index + 1}_y
+                    </label>
+                    <input
+                      type="number"
+                      value={point.y}
+                      onChange={(event) =>
+                        updateTrianglePoint(index as 0 | 1 | 2, "y", Number(event.target.value))
+                      }
+                      className="w-full rounded-md border border-white/10 bg-[#070b16] px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-blue-500/50"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : null}
 
@@ -459,7 +544,7 @@ export function DashboardPanels({
             </div>
             <input
               type="range"
-              min="15"
+              min="20.7"
               max="35"
               step="0.1"
               value={thetaMin}
@@ -480,7 +565,7 @@ export function DashboardPanels({
             <input
               type="range"
               min="1"
-              max="2.5"
+              max={Math.SQRT2}
               step="0.01"
               value={rlRatio}
               onChange={(event) => setRlRatio(Number.parseFloat(event.target.value))}
@@ -491,7 +576,7 @@ export function DashboardPanels({
           <div>
             <div className="mb-2 flex items-end justify-between">
               <label className="text-xs font-semibold text-zinc-300">
-                Grid Spacing Proxy
+                Maximum Edge Length
               </label>
               <span className="rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-400">
                 {maxLength.toFixed(2)}
@@ -535,6 +620,37 @@ export function DashboardPanels({
               </button>
             </div>
           </div>
+
+          {elementType === "Q4" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-zinc-300">
+                  nx divisions
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={quadNx}
+                  onChange={(event) => setQuadNx(Number(event.target.value))}
+                  className="w-full rounded-lg border border-white/10 bg-[#070b16] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-blue-500/50"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-zinc-300">
+                  ny divisions
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={quadNy}
+                  onChange={(event) => setQuadNy(Number(event.target.value))}
+                  className="w-full rounded-lg border border-white/10 bg-[#070b16] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-blue-500/50"
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -582,6 +698,58 @@ export function DashboardPanels({
                 <span className="text-zinc-500">Tris [T]</span>
                 <span className="text-zinc-200">
                   {meshStats.tris.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-white/5 bg-[#070b16] p-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Min Angle
+                </div>
+                <div className="mt-1 font-mono text-sm text-zinc-100">
+                  {getMetricNumber("min_angle_deg")?.toFixed(2) ?? "n/a"}°
+                </div>
+                <div
+                  className={`mt-1 text-[10px] ${
+                    getMetricBoolean("passes_min_angle") === false
+                      ? "text-red-300"
+                      : "text-emerald-300"
+                  }`}
+                >
+                  θmin &gt; 20.7°
+                </div>
+              </div>
+              <div className="rounded-xl border border-white/5 bg-[#070b16] p-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Max r/l
+                </div>
+                <div className="mt-1 font-mono text-sm text-zinc-100">
+                  {getMetricNumber("max_circumradius_edge_ratio")?.toFixed(3) ?? "n/a"}
+                </div>
+                <div
+                  className={`mt-1 text-[10px] ${
+                    getMetricBoolean("passes_circumradius_edge_ratio") === false
+                      ? "text-red-300"
+                      : "text-emerald-300"
+                  }`}
+                >
+                  limit ≤ √2
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/5 bg-[#070b16] p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Empty Circumcircle
+                </span>
+                <span
+                  className={`font-mono text-xs ${
+                    meshStats.emptyCircumcircleValid ? "text-emerald-300" : "text-red-300"
+                  }`}
+                >
+                  {meshStats.emptyCircumcircleValid ? "PASS" : "FAIL"}
                 </span>
               </div>
             </div>
@@ -662,6 +830,35 @@ export function DashboardPanels({
             </div>
           )}
         </div>
+      </div>
+
+      <div className="border-t border-white/5 p-6">
+        <h3 className="mb-5 flex items-center text-xs font-bold uppercase tracking-widest text-zinc-500">
+          <Database className="mr-2 h-3.5 w-3.5" />
+          Connectivity Matrices
+        </h3>
+        {hasMesh && meshConnectivityMatrices ? (
+          <div className="space-y-3">
+            {(["nodes_matrix", "edges_matrix", "tris_matrix"] as const).map((key) => (
+              <div key={key} className="rounded-xl border border-white/5 bg-[#070b16] p-3">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  {key}
+                </div>
+                <div className="space-y-1 overflow-x-auto font-mono text-[10px] text-zinc-300">
+                  {matrixRows(key).map((row, index) => (
+                    <div key={`${key}-${index}`} className="whitespace-nowrap">
+                      {formatMatrixRow(row)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-4 text-center text-xs text-zinc-600">
+            Generate a backend mesh to inspect node, edge, and triangle matrices.
+          </div>
+        )}
       </div>
 
       <div className="border-t border-white/5 p-6">
