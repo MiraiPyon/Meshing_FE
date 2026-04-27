@@ -72,6 +72,7 @@ export function Dashboard() {
         <div className="flex min-w-0 flex-1 flex-col bg-[#050816]">
           <DashboardHeader
             cancelCurrentSketch={dashboard.cancelCurrentSketch}
+            canUndo={dashboard.canUndo}
             closeCurrentShape={dashboard.closeCurrentShape}
             deleteSelectedShape={dashboard.deleteSelectedShape}
             draftReadyToClose={dashboard.draftReadyToClose}
@@ -83,6 +84,7 @@ export function Dashboard() {
             onLogout={handleLogout}
             profile={profile}
             removeLastStep={dashboard.removeLastStep}
+            resetGeometry={dashboard.resetGeometry}
             selectedPoint={dashboard.selectedPoint}
           />
 
@@ -96,13 +98,16 @@ export function Dashboard() {
               handleMouseDown={dashboard.handleMouseDown}
               handleMouseMove={dashboard.handleMouseMove}
               handleMouseUp={dashboard.handleMouseUp}
+              handleWheel={dashboard.handleWheel}
               hasMesh={dashboard.hasMesh}
               holeLoops={dashboard.holeLoops}
+              isPanning={dashboard.isPanning}
               isSketching={dashboard.isSketching}
               logs={dashboard.logs}
               meshEdges={dashboard.meshEdges}
               meshNodes={dashboard.meshNodes}
               mousePos={dashboard.mousePos}
+              panOffset={dashboard.panOffset}
               outerLoop={dashboard.outerLoop}
               resetZoom={dashboard.resetZoom}
               selectedPoint={dashboard.selectedPoint}

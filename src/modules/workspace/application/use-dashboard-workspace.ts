@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import { EMPTY_MESH_ANALYSIS, analyzeMesh } from "../../analysis/application/use-cases/analyze-mesh";
 import type { Point } from "../../geometry/domain/types";
@@ -47,6 +48,19 @@ import { meshStore } from "../../../store/meshStore";
 import type { GeometryResponse } from "../../../services/apiClient";
 
 const CIRCLE_SEGMENT_COUNT = 64;
+
+function isEditableKeyboardTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable
+  );
+}
 
 function buildRectangleOuterLoop(
   xMin: number,
@@ -180,6 +194,8 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const [draggingPoint, setDraggingPoint] = useState<SelectedPoint>(null);
   const [mousePos, setMousePos] = useState<Point>({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
   const [meshPreview, setMeshPreview] = useState<ReturnType<typeof generateMesh> | null>(null);
   const [logs, setLogs] = useState<string[]>(DEFAULT_WORKSPACE_LOGS);
   const [shapeDatText, setShapeDatText] = useState(
@@ -221,6 +237,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const [geometryError, setGeometryError] = useState<string | null>(null);
 
   const draftStrokesRef = useRef<Point[][]>(draftStrokes);
+  const panDragStartRef = useRef<{ screen: Point; offset: Point } | null>(null);
 
   useEffect(() => {
     draftStrokesRef.current = draftStrokes;
@@ -241,6 +258,8 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const draftLoop = draftStrokes.flat();
   const draftReadyToClose = draftLoop.length >= 3;
   const hasDraft = draftPointCount > 0;
+  const canUndo =
+    draftStrokes.length > 0 || holeLoops.length > 0 || outerLoop.length > 0;
   const generatedSegments = useMemo(() => {
     return outerLoop.length + holeLoops.reduce((total, loop) => total + loop.length, 0);
   }, [holeLoops, outerLoop]);
@@ -280,20 +299,29 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     );
   };
 
+  const getScreenPoint = (
+    event: ReactMouseEvent<HTMLCanvasElement>,
+  ): Point => {
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: Math.round(event.clientX - rect.left),
+      y: Math.round(event.clientY - rect.top),
+    };
+  };
+
   const getCanvasPoint = (
     event: ReactMouseEvent<HTMLCanvasElement>,
   ): Point | null => {
     const canvas = event.currentTarget;
-    const rect = canvas.getBoundingClientRect();
+    const screenPoint = getScreenPoint(event);
 
     return screenToCanvasPoint(
-      {
-        x: Math.round(event.clientX - rect.left),
-        y: Math.round(event.clientY - rect.top),
-      },
+      screenPoint,
       canvas.width,
       canvas.height,
       zoomLevel,
+      panOffset,
     );
   };
 
@@ -313,9 +341,28 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
 
   const resetZoom = () => {
     setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    setIsPanning(false);
+    panDragStartRef.current = null;
+  };
+
+  const handleWheel = (event: ReactWheelEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
+
+    if (event.deltaY < 0) {
+      zoomIn();
+      return;
+    }
+
+    if (event.deltaY > 0) {
+      zoomOut();
+    }
   };
 
   const setActiveTool = (tool: Tool) => {
+    setIsPanning(false);
+    panDragStartRef.current = null;
+
     if (tool === "boundary") {
       dispatchMachine(startBoundaryCommand());
       return;
@@ -378,6 +425,9 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     setDraggingPoint(null);
     setSelectedGeometryId(null);
     setGeometryError(null);
+    setPanOffset({ x: 0, y: 0 });
+    setIsPanning(false);
+    panDragStartRef.current = null;
     meshStore.clear();
     clearMeshPreview();
     dispatchMachine({ type: "RESET" });
@@ -454,6 +504,11 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   };
 
   const handleMouseDown = (event: ReactMouseEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const screenPoint = getScreenPoint(event);
     const point = getCanvasPoint(event);
     if (!point) {
       return;
@@ -474,6 +529,15 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       setSelectedPoint(found);
       if (found) {
         setDraggingPoint(found);
+        setIsPanning(false);
+        panDragStartRef.current = null;
+      } else {
+        setDraggingPoint(null);
+        setIsPanning(true);
+        panDragStartRef.current = {
+          screen: screenPoint,
+          offset: panOffset,
+        };
       }
       return;
     }
@@ -499,6 +563,30 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   };
 
   const handleMouseMove = (event: ReactMouseEvent<HTMLCanvasElement>) => {
+    const canvas = event.currentTarget;
+    const screenPoint = getScreenPoint(event);
+
+    if (isPanning && panDragStartRef.current) {
+      const nextOffset = {
+        x:
+          panDragStartRef.current.offset.x +
+          (screenPoint.x - panDragStartRef.current.screen.x),
+        y:
+          panDragStartRef.current.offset.y +
+          (screenPoint.y - panDragStartRef.current.screen.y),
+      };
+      const nextPoint = screenToCanvasPoint(
+        screenPoint,
+        canvas.width,
+        canvas.height,
+        zoomLevel,
+        nextOffset,
+      );
+      setPanOffset(nextOffset);
+      setMousePos(nextPoint);
+      return;
+    }
+
     const point = getCanvasPoint(event);
     if (!point) {
       return;
@@ -543,6 +631,11 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   };
 
   const handleMouseUp = () => {
+    if (isPanning) {
+      setIsPanning(false);
+      panDragStartRef.current = null;
+    }
+
     if (draggingPoint) {
       addLog(
         `${
@@ -573,16 +666,61 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        cancelCurrentSketch();
+      if (isEditableKeyboardTarget(event.target)) {
+        return;
       }
 
-      if (event.key === "Enter" && draftLoop.length >= 3) {
+      const key = event.key.toLowerCase();
+
+      if ((event.ctrlKey || event.metaKey) && key === "z") {
+        event.preventDefault();
+        removeLastStep();
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (key === "1") {
+        event.preventDefault();
+        setActiveTool("select");
+        return;
+      }
+
+      if (key === "2") {
+        event.preventDefault();
+        setActiveTool("boundary");
+        setWorkspaceDraftType("outer");
+        return;
+      }
+
+      if (key === "3") {
+        event.preventDefault();
+        setActiveTool("hole");
+        setWorkspaceDraftType("hole");
+        return;
+      }
+
+      if (key === "4") {
+        event.preventDefault();
+        setActiveTool("eraser");
+        return;
+      }
+
+      if (key === "escape") {
+        event.preventDefault();
+        cancelCurrentSketch();
+        return;
+      }
+
+      if ((key === "enter" || key === "c") && draftLoop.length >= 3) {
         event.preventDefault();
         closeDraftLoop(draftLoop);
+        return;
       }
 
-      if (event.key === "Delete" || event.key === "Backspace") {
+      if (key === "delete" || key === "backspace") {
         if (draftLoop.length > 0 || isSketching) {
           event.preventDefault();
           cancelCurrentSketch();
@@ -593,12 +731,42 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
           event.preventDefault();
           deleteSelectedShape();
         }
+        return;
+      }
+
+      if (key === "r") {
+        event.preventDefault();
+        resetGeometry();
+        return;
+      }
+
+      if (key === "m") {
+        event.preventDefault();
+        handleGenerateMesh();
+        return;
+      }
+
+      if (key === "+" || key === "=") {
+        event.preventDefault();
+        zoomIn();
+        return;
+      }
+
+      if (key === "-" || key === "_") {
+        event.preventDefault();
+        zoomOut();
+        return;
+      }
+
+      if (key === "0") {
+        event.preventDefault();
+        resetZoom();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [draftLoop, isSketching, selectedPoint]);
+  });
 
   const handleGenerateMesh = () => {
     if (draftPointCount >= 3) {
@@ -1117,6 +1285,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     addLog,
     applyBooleanResult,
     cancelCurrentSketch,
+    canUndo,
     closeCurrentShape,
     deleteSelectedShape,
     draftPointCount,
@@ -1133,6 +1302,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleWheel,
     hasDraft,
     hasMesh,
     hasProjectData,
@@ -1142,6 +1312,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     isProjectBusy,
     isRunningFEA,
     isShapeDatMeshing,
+    isPanning,
     isSketching,
     logs,
     maxLength,
@@ -1162,6 +1333,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
     resetGeometry,
     resetZoom,
     rlRatio,
+    panOffset,
     selectedGeometryId,
     selectedPoint,
     setCircleInput,

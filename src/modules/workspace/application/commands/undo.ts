@@ -28,10 +28,10 @@ export function undoCommand({
 
   if (outerLoop.length > 0) {
     return {
-      draftStrokes,
+      draftStrokes: [...draftStrokes, outerLoop],
       draftType: "outer",
       holeLoops,
-      logMessage: "Removed the outer boundary.",
+      logMessage: "Reopened the outer boundary as a draft stroke.",
       nextDraftType: "outer",
       nextTool: "boundary",
       outerLoop: [],

@@ -94,6 +94,7 @@ export type WorkspaceViewModel = {
   addLog: (message: string) => void;
   applyBooleanResult: (outer: Point[], holes: Point[][]) => void;
   cancelCurrentSketch: () => void;
+  canUndo: boolean;
   closeCurrentShape: () => void;
   deleteSelectedShape: () => void;
   draftPointCount: number;
@@ -114,6 +115,9 @@ export type WorkspaceViewModel = {
     event: React.MouseEvent<HTMLCanvasElement>,
   ) => void;
   handleMouseUp: () => void;
+  handleWheel: (
+    event: React.WheelEvent<HTMLCanvasElement>,
+  ) => void;
   hasDraft: boolean;
   hasMesh: boolean;
   hasProjectData: boolean;
@@ -123,6 +127,7 @@ export type WorkspaceViewModel = {
   isProjectBusy: boolean;
   isRunningFEA: boolean;
   isShapeDatMeshing: boolean;
+  isPanning: boolean;
   isSketching: boolean;
   logs: string[];
   maxLength: number;
@@ -143,6 +148,7 @@ export type WorkspaceViewModel = {
   resetZoom: () => void;
   runQuickFEA: () => void;
   rlRatio: number;
+  panOffset: Point;
   selectedGeometryId: string | null;
   selectedPoint: SelectedPoint;
   setCircleInput: (input: CirclePrimitiveInput) => void;

@@ -6,6 +6,7 @@ import {
   Download,
   LogOut,
   Play,
+  RefreshCcw,
   RotateCcw,
   Trash2,
 } from "lucide-react";
@@ -20,6 +21,7 @@ type DashboardHeaderProps = {
 } & Pick<
   WorkspaceViewModel,
   | "cancelCurrentSketch"
+  | "canUndo"
   | "closeCurrentShape"
   | "deleteSelectedShape"
   | "draftReadyToClose"
@@ -29,11 +31,13 @@ type DashboardHeaderProps = {
   | "isMeshing"
   | "isSketching"
   | "removeLastStep"
+  | "resetGeometry"
   | "selectedPoint"
 >;
 
 export function DashboardHeader({
   cancelCurrentSketch,
+  canUndo,
   closeCurrentShape,
   deleteSelectedShape,
   draftReadyToClose,
@@ -45,6 +49,7 @@ export function DashboardHeader({
   onLogout,
   profile,
   removeLastStep,
+  resetGeometry,
   selectedPoint,
 }: DashboardHeaderProps) {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -116,10 +121,20 @@ export function DashboardHeader({
           </button>
           <button
             onClick={removeLastStep}
-            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white"
+            disabled={!canUndo}
+            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white disabled:opacity-40"
+            title="Undo one step (Ctrl/Cmd+Z)"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Undo</span>
+          </button>
+          <button
+            onClick={resetGeometry}
+            className="flex items-center space-x-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white"
+            title="Reset drawing (R)"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            <span>Reset</span>
           </button>
           <button
             onClick={deleteSelectedShape}

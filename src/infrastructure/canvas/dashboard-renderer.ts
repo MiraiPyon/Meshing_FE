@@ -16,6 +16,7 @@ export type DashboardCanvasModel = {
   meshEdges: MeshEdge[];
   meshNodes: Point[];
   mousePos: Point;
+  panOffset: Point;
   outerLoop: Point[];
   selectedPoint: SelectedPoint;
   zoomLevel: number;
@@ -32,6 +33,7 @@ export function renderDashboardCanvas(
     meshEdges,
     meshNodes,
     mousePos,
+    panOffset,
     outerLoop,
     selectedPoint,
     zoomLevel,
@@ -47,44 +49,61 @@ export function renderDashboardCanvas(
   ctx.fillStyle = "#020617";
   ctx.fillRect(0, 0, width, height);
 
-  const minorGridSpacing = Math.max(5, Math.round(20 * zoomLevel));
-  const majorGridSpacing = Math.max(25, Math.round(100 * zoomLevel));
-
-  ctx.strokeStyle = "rgba(148, 163, 184, 0.08)";
-  ctx.lineWidth = 1;
-  for (let x = 0; x < width; x += minorGridSpacing) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-
-  for (let y = 0; y < height; y += minorGridSpacing) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = "rgba(148, 163, 184, 0.15)";
-  for (let x = 0; x < width; x += majorGridSpacing) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-
-  for (let y = 0; y < height; y += majorGridSpacing) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
   ctx.save();
-  ctx.translate(width / 2, height / 2);
+  ctx.translate(width / 2 + panOffset.x, height / 2 + panOffset.y);
   ctx.scale(zoomLevel, zoomLevel);
   ctx.translate(-width / 2, -height / 2);
+
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const worldLeft = centerX + (0 - centerX - panOffset.x) / zoomLevel;
+  const worldRight = centerX + (width - centerX - panOffset.x) / zoomLevel;
+  const worldTop = centerY + (0 - centerY - panOffset.y) / zoomLevel;
+  const worldBottom = centerY + (height - centerY - panOffset.y) / zoomLevel;
+
+  const minorGridSpacing = 20;
+  const majorGridSpacing = 100;
+  const minorStartX = Math.floor(Math.min(worldLeft, worldRight) / minorGridSpacing) * minorGridSpacing;
+  const minorEndX = Math.ceil(Math.max(worldLeft, worldRight) / minorGridSpacing) * minorGridSpacing;
+  const minorStartY = Math.floor(Math.min(worldTop, worldBottom) / minorGridSpacing) * minorGridSpacing;
+  const minorEndY = Math.ceil(Math.max(worldTop, worldBottom) / minorGridSpacing) * minorGridSpacing;
+
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.08)";
+  ctx.lineWidth = 1 / zoomLevel;
+  for (let x = minorStartX; x <= minorEndX; x += minorGridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, worldTop);
+    ctx.lineTo(x, worldBottom);
+    ctx.stroke();
+  }
+
+  for (let y = minorStartY; y <= minorEndY; y += minorGridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(worldLeft, y);
+    ctx.lineTo(worldRight, y);
+    ctx.stroke();
+  }
+
+  const majorStartX = Math.floor(Math.min(worldLeft, worldRight) / majorGridSpacing) * majorGridSpacing;
+  const majorEndX = Math.ceil(Math.max(worldLeft, worldRight) / majorGridSpacing) * majorGridSpacing;
+  const majorStartY = Math.floor(Math.min(worldTop, worldBottom) / majorGridSpacing) * majorGridSpacing;
+  const majorEndY = Math.ceil(Math.max(worldTop, worldBottom) / majorGridSpacing) * majorGridSpacing;
+
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.15)";
+  ctx.lineWidth = 1 / zoomLevel;
+  for (let x = majorStartX; x <= majorEndX; x += majorGridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, worldTop);
+    ctx.lineTo(x, worldBottom);
+    ctx.stroke();
+  }
+
+  for (let y = majorStartY; y <= majorEndY; y += majorGridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(worldLeft, y);
+    ctx.lineTo(worldRight, y);
+    ctx.stroke();
+  }
 
   const drawLoop = (
     points: Point[],
@@ -188,9 +207,16 @@ export function renderDashboardCanvas(
     });
   }
 
+  ctx.restore();
+
   if (activeTool === "eraser") {
+    const screenMouse = {
+      x: centerX + panOffset.x + (mousePos.x - centerX) * zoomLevel,
+      y: centerY + panOffset.y + (mousePos.y - centerY) * zoomLevel,
+    };
+
     ctx.beginPath();
-    ctx.arc(mousePos.x, mousePos.y, ERASER_RADIUS, 0, Math.PI * 2);
+    ctx.arc(screenMouse.x, screenMouse.y, ERASER_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(248, 113, 113, 0.12)";
     ctx.fill();
     ctx.strokeStyle = "rgba(248, 113, 113, 0.9)";
@@ -199,6 +225,4 @@ export function renderDashboardCanvas(
     ctx.stroke();
     ctx.setLineDash([]);
   }
-
-  ctx.restore();
 }

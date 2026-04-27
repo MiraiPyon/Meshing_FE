@@ -1,25 +1,38 @@
-import { useEffect, useRef, type MouseEventHandler, type ReactNode } from "react";
-import { renderDashboardCanvas, type DashboardCanvasModel } from "../../../infrastructure/canvas/dashboard-renderer";
+import {
+  useEffect,
+  useRef,
+  type MouseEventHandler,
+  type ReactNode,
+  type WheelEventHandler,
+} from "react";
+import {
+  renderDashboardCanvas,
+  type DashboardCanvasModel,
+} from "../../../infrastructure/canvas/dashboard-renderer";
 import { cn } from "../ui/utils";
 
 type CanvasViewportProps = DashboardCanvasModel & {
   children?: ReactNode;
   className?: string;
+  isPanning: boolean;
   isSketching: boolean;
   onMouseDown: MouseEventHandler<HTMLCanvasElement>;
   onMouseLeave: MouseEventHandler<HTMLCanvasElement>;
   onMouseMove: MouseEventHandler<HTMLCanvasElement>;
   onMouseUp: MouseEventHandler<HTMLCanvasElement>;
+  onWheel: WheelEventHandler<HTMLCanvasElement>;
 };
 
 export function CanvasViewport({
   children,
   className,
+  isPanning,
   isSketching,
   onMouseDown,
   onMouseLeave,
   onMouseMove,
   onMouseUp,
+  onWheel,
   ...model
 }: CanvasViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,6 +65,7 @@ export function CanvasViewport({
     model.meshEdges,
     model.meshNodes,
     model.mousePos,
+    model.panOffset,
     model.outerLoop,
     model.selectedPoint,
     model.zoomLevel,
@@ -72,11 +86,14 @@ export function CanvasViewport({
         onMouseLeave={onMouseLeave}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
+        onWheel={onWheel}
         className={`block h-full w-full ${
           model.activeTool === "eraser"
             ? "cursor-none"
-            : model.activeTool === "select"
-              ? "cursor-default"
+            : isPanning
+              ? "cursor-grabbing"
+              : model.activeTool === "select"
+                ? "cursor-grab"
               : isSketching
                 ? "cursor-crosshair"
                 : "cursor-default"
