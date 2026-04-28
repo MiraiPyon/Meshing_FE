@@ -1,27 +1,25 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
-  CheckCircle2,
   ChevronRight,
-  Circle,
+  CircleDot,
   Database,
   FileDown,
-  FolderInput,
   GitBranch,
+  Hexagon,
   Layers,
   Minus,
-  MousePointer2,
-  PenLine,
   Plus,
-  RotateCcw,
   Rows3,
+  Spline,
+  Square,
   Table2,
   Terminal,
-  Trash2,
-  XCircle,
+  TriangleRight,
 } from "lucide-react";
 import { polygonArea } from "../../../modules/geometry/domain/services/measurements";
 import type { MeshElement } from "../../../modules/meshing/domain/types";
 import type {
+  DraftShapeMode,
   WorkspaceViewModel,
 } from "../../../modules/workspace/application/types";
 import { CanvasViewport } from "./CanvasViewport";
@@ -31,24 +29,18 @@ type DataTab = "console" | "nodes" | "edges" | "elements" | "quality" | "export"
 type DashboardWorkspacePaneProps = Pick<
   WorkspaceViewModel,
   | "activeTool"
-  | "cancelCurrentSketch"
-  | "closeCurrentShape"
-  | "deleteSelectedShape"
   | "draftPointCount"
-  | "draftReadyToClose"
+  | "draftShapeMode"
   | "draftStrokes"
   | "draftType"
+  | "eraserRadius"
   | "geometryReady"
-  | "handleExportMesh"
-  | "handleImportSample"
   | "handleMouseDown"
   | "handleMouseMove"
   | "handleMouseUp"
-  | "handleValidatePSLG"
-  | "hasDraft"
   | "hasMesh"
   | "holeLoops"
-  | "isMeshing"
+  | "isPanningCanvas"
   | "isSketching"
   | "logs"
   | "meshEdges"
@@ -56,25 +48,18 @@ type DashboardWorkspacePaneProps = Pick<
   | "meshPreview"
   | "mousePos"
   | "outerLoop"
+  | "panOffset"
   | "pslgValidation"
-  | "removeLastStep"
+  | "polygonSides"
   | "resetZoom"
   | "selectedPoint"
-  | "setActiveTool"
-  | "setDraftType"
+  | "setDraftShapeMode"
+  | "setEraserRadius"
+  | "setPolygonSides"
   | "zoomIn"
   | "zoomLevel"
   | "zoomOut"
 >;
-
-type ToolbarAction = {
-  active?: boolean;
-  disabled?: boolean;
-  icon: typeof MousePointer2;
-  label: string;
-  onClick: () => void;
-  tone?: "blue" | "emerald" | "red" | "zinc";
-};
 
 const DATA_TABS: Array<{ icon: typeof Terminal; id: DataTab; label: string }> = [
   { icon: Terminal, id: "console", label: "Console Logs" },
@@ -83,6 +68,18 @@ const DATA_TABS: Array<{ icon: typeof Terminal; id: DataTab; label: string }> = 
   { icon: Table2, id: "elements", label: "Elements Matrix" },
   { icon: GitBranch, id: "quality", label: "Quality Table" },
   { icon: FileDown, id: "export", label: "Export Preview" },
+];
+
+const DRAW_MODES: Array<{
+  icon: typeof Spline;
+  id: DraftShapeMode;
+  label: string;
+}> = [
+  { icon: Spline, id: "freehand", label: "Freehand" },
+  { icon: CircleDot, id: "circle", label: "Circle" },
+  { icon: TriangleRight, id: "triangle", label: "Triangle" },
+  { icon: Square, id: "square", label: "Square" },
+  { icon: Hexagon, id: "polygon", label: "Polygon" },
 ];
 
 function formatNumber(value: number, digits = 2) {
@@ -98,38 +95,6 @@ function getOrientationLabel(points: WorkspaceViewModel["outerLoop"], hole = fal
   const label = area >= 0 ? "CCW" : "CW";
   const expected = hole ? "CW" : "CCW";
   return label === expected ? `${label}, Valid` : `${label}, Normalized`;
-}
-
-function ToolbarButton({
-  active = false,
-  disabled = false,
-  icon: Icon,
-  label,
-  onClick,
-  tone = "zinc",
-}: ToolbarAction) {
-  const activeClass = {
-    blue: "border-blue-500/50 bg-blue-500/15 text-blue-200",
-    emerald: "border-emerald-500/50 bg-emerald-500/15 text-emerald-200",
-    red: "border-red-500/50 bg-red-500/15 text-red-200",
-    zinc: "border-white/15 bg-white/10 text-white",
-  }[tone];
-
-  return (
-    <button
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex h-12 min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-xs transition ${
-        active
-          ? activeClass
-          : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.04] hover:text-white"
-      } disabled:cursor-not-allowed disabled:opacity-40`}
-      title={label}
-    >
-      <Icon className="h-4 w-4" />
-      <span className="whitespace-nowrap leading-tight">{label}</span>
-    </button>
-  );
 }
 
 function PanelHeader({
@@ -203,24 +168,18 @@ function MatrixTable({
 
 export function DashboardWorkspacePane({
   activeTool,
-  cancelCurrentSketch,
-  closeCurrentShape,
-  deleteSelectedShape,
   draftPointCount,
-  draftReadyToClose,
+  draftShapeMode,
   draftStrokes,
   draftType,
+  eraserRadius,
   geometryReady,
-  handleExportMesh,
-  handleImportSample,
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
-  handleValidatePSLG,
-  hasDraft,
   hasMesh,
   holeLoops,
-  isMeshing,
+  isPanningCanvas,
   isSketching,
   logs,
   meshEdges,
@@ -228,86 +187,19 @@ export function DashboardWorkspacePane({
   meshPreview,
   mousePos,
   outerLoop,
+  panOffset,
   pslgValidation,
-  removeLastStep,
+  polygonSides,
   resetZoom,
   selectedPoint,
-  setActiveTool,
-  setDraftType,
+  setDraftShapeMode,
+  setEraserRadius,
+  setPolygonSides,
   zoomIn,
   zoomLevel,
   zoomOut,
 }: DashboardWorkspacePaneProps) {
   const [activeDataTab, setActiveDataTab] = useState<DataTab>("console");
-
-  const toolbarActions: ToolbarAction[] = [
-    {
-      active: activeTool === "select",
-      icon: MousePointer2,
-      label: "Select",
-      onClick: () => setActiveTool("select"),
-    },
-    {
-      active: activeTool === "boundary",
-      icon: PenLine,
-      label: "Outer Loop",
-      onClick: () => {
-        setActiveTool("boundary");
-        setDraftType("outer");
-      },
-      tone: "emerald",
-    },
-    {
-      active: activeTool === "hole",
-      icon: Circle,
-      label: "Inner Loop",
-      onClick: () => {
-        setActiveTool("hole");
-        setDraftType("hole");
-      },
-      tone: "red",
-    },
-    {
-      disabled: !draftReadyToClose,
-      icon: CheckCircle2,
-      label: "Close",
-      onClick: closeCurrentShape,
-      tone: "blue",
-    },
-    {
-      disabled: !geometryReady,
-      icon: CheckCircle2,
-      label: "Validate",
-      onClick: handleValidatePSLG,
-      tone: "blue",
-    },
-    {
-      icon: FolderInput,
-      label: "Import",
-      onClick: handleImportSample,
-      tone: "zinc",
-    },
-    {
-      disabled: !hasDraft && !isSketching,
-      icon: XCircle,
-      label: "Cancel",
-      onClick: cancelCurrentSketch,
-      tone: "zinc",
-    },
-    {
-      icon: RotateCcw,
-      label: "Undo",
-      onClick: removeLastStep,
-      tone: "zinc",
-    },
-    {
-      disabled: !selectedPoint,
-      icon: Trash2,
-      label: "Delete",
-      onClick: deleteSelectedShape,
-      tone: "red",
-    },
-  ];
 
   const worstElement = useMemo<MeshElement | null>(() => {
     if (!meshPreview?.elements.length) {
@@ -491,68 +383,16 @@ export function DashboardWorkspacePane({
     }
 
     return (
-      <div className="grid h-full grid-cols-[1fr_auto] gap-4 overflow-hidden p-4">
-        <pre className="overflow-auto rounded-lg border border-slate-700/70 bg-[#07101b] p-4 font-mono text-xs text-slate-300">
+      <div className="h-full overflow-hidden p-4">
+        <pre className="h-full overflow-auto rounded-lg border border-slate-700/70 bg-[#07101b] p-4 font-mono text-xs text-slate-300">
           {exportPreview}
         </pre>
-        <div className="flex w-36 flex-col gap-2">
-          <button
-            onClick={() => handleExportMesh("json")}
-            className="rounded-lg border border-blue-500/40 bg-blue-500/15 px-3 py-2 text-sm text-blue-100 hover:bg-blue-500/25"
-          >
-            JSON
-          </button>
-          <button
-            onClick={() => handleExportMesh("csv")}
-            className="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100 hover:bg-emerald-500/25"
-          >
-            CSV
-          </button>
-          <button
-            onClick={() => handleExportMesh("dat")}
-            className="rounded-lg border border-slate-500/40 bg-slate-500/15 px-3 py-2 text-sm text-slate-100 hover:bg-slate-500/25"
-          >
-            DAT
-          </button>
-        </div>
       </div>
     );
   };
 
   return (
     <section className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
-      <div className="h-24 shrink-0 overflow-hidden rounded-lg border border-blue-500/35 bg-[#101a28]">
-        <PanelHeader right="Geometry + PSLG" title="Workspace Controls" />
-        <div className="flex h-[calc(100%-2.5rem)] min-w-0 items-center gap-3 p-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-            {toolbarActions.map((action) => (
-              <ToolbarButton key={action.label} {...action} />
-            ))}
-          </div>
-
-          <div className="hidden h-12 shrink-0 grid-cols-3 gap-2 xl:grid">
-            <div className="min-w-28 rounded-lg border border-slate-700/70 bg-[#07101b] px-3 py-2">
-              <div className="text-[10px] uppercase text-slate-500">Outer</div>
-              <div className="font-mono text-sm text-slate-100">
-                {outerLoop.length || "--"}
-              </div>
-            </div>
-            <div className="min-w-28 rounded-lg border border-slate-700/70 bg-[#07101b] px-3 py-2">
-              <div className="text-[10px] uppercase text-slate-500">Holes</div>
-              <div className="font-mono text-sm text-slate-100">
-                {holeLoops.length}
-              </div>
-            </div>
-            <div className="min-w-28 rounded-lg border border-slate-700/70 bg-[#07101b] px-3 py-2">
-              <div className="text-[10px] uppercase text-slate-500">PSLG</div>
-              <div className="mt-0.5">
-                <StatusPill label={pslgValidation.status} tone={validationTone} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid min-h-0 flex-1 grid-cols-[240px_minmax(0,1fr)] gap-2">
         <aside className="overflow-hidden rounded-lg border border-slate-700/70 bg-[#101a28]">
           <PanelHeader title="Hierarchy Tree" />
@@ -621,10 +461,13 @@ export function DashboardWorkspacePane({
           <div className="relative h-[calc(100%-2.5rem)] min-h-0">
             <CanvasViewport
               activeTool={activeTool}
+              draftShapeMode={draftShapeMode}
               draftStrokes={draftStrokes}
               draftType={draftType}
+              eraserRadius={eraserRadius}
               hasMesh={hasMesh}
               holeLoops={holeLoops}
+              isPanningCanvas={isPanningCanvas}
               isSketching={isSketching}
               meshEdges={meshEdges}
               meshElements={meshPreview?.elements ?? []}
@@ -635,6 +478,7 @@ export function DashboardWorkspacePane({
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               outerLoop={outerLoop}
+              panOffset={panOffset}
               selectedPoint={selectedPoint}
               zoomLevel={zoomLevel}
             >
@@ -661,6 +505,77 @@ export function DashboardWorkspacePane({
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
+
+              {activeTool === "boundary" || activeTool === "hole" ? (
+                <div className="absolute bottom-4 left-4 z-10 rounded-lg border border-slate-700/70 bg-[#07101b]/95 p-2 shadow-xl backdrop-blur">
+                  <div className="flex items-center gap-1">
+                    {DRAW_MODES.map(({ icon: Icon, id, label }) => (
+                      <button
+                        key={id}
+                        onClick={() => setDraftShapeMode(id)}
+                        className={`flex h-8 w-8 items-center justify-center rounded-md border transition ${
+                          draftShapeMode === id
+                            ? "border-blue-500/50 bg-blue-500/20 text-blue-100"
+                            : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/10 hover:text-white"
+                        }`}
+                        title={label}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </button>
+                    ))}
+                  </div>
+
+                  {draftShapeMode === "polygon" ? (
+                    <div className="mt-2 w-48 border-t border-slate-700/70 pt-2">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                          Polygon Points
+                        </span>
+                        <span className="font-mono text-xs text-slate-200">
+                          {polygonSides}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={5}
+                        max={12}
+                        step={1}
+                        value={polygonSides}
+                        onChange={(event) =>
+                          setPolygonSides(Number.parseInt(event.target.value, 10))
+                        }
+                        className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-700 accent-blue-400"
+                        title="Polygon points"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {activeTool === "eraser" ? (
+                <div className="absolute right-4 top-16 z-10 w-52 rounded-lg border border-slate-700/70 bg-[#07101b]/95 p-3 shadow-xl backdrop-blur">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                      Eraser Size
+                    </span>
+                    <span className="font-mono text-xs text-slate-200">
+                      {eraserRadius}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={8}
+                    max={56}
+                    step={2}
+                    value={eraserRadius}
+                    onChange={(event) =>
+                      setEraserRadius(Number.parseInt(event.target.value, 10))
+                    }
+                    className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-700 accent-red-400"
+                    title="Eraser size"
+                  />
+                </div>
+              ) : null}
 
               {worstElement ? (
                 <div className="pointer-events-none absolute left-6 top-6 z-10 rounded-lg border border-slate-600 bg-[#07101b]/90 p-3 font-mono text-xs text-slate-200 shadow-xl">

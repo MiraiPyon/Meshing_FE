@@ -45,36 +45,51 @@ export function Dashboard() {
     <div className="h-screen w-full overflow-hidden bg-[#020617] font-sans text-zinc-300">
       <div className="flex h-full">
         <DashboardSidebar
+          activeTool={dashboard.activeTool}
+          cancelCurrentSketch={dashboard.cancelCurrentSketch}
+          closeCurrentShape={dashboard.closeCurrentShape}
+          deleteSelectedShape={dashboard.deleteSelectedShape}
+          draftReadyToClose={dashboard.draftReadyToClose}
+          geometryReady={dashboard.geometryReady}
+          handleImportGeometryFile={dashboard.handleImportGeometryFile}
+          handleValidatePSLG={dashboard.handleValidatePSLG}
+          hasDraft={dashboard.hasDraft}
+          isSketching={dashboard.isSketching}
+          removeLastStep={dashboard.removeLastStep}
           resetGeometry={dashboard.resetGeometry}
+          selectedPoint={dashboard.selectedPoint}
+          setActiveTool={dashboard.setActiveTool}
+          setDraftType={dashboard.setDraftType}
         />
 
         <div className="flex min-w-0 flex-1 flex-col bg-[#050816]">
           <DashboardHeader
+            handleExportMesh={dashboard.handleExportMesh}
+            handleGenerateMesh={dashboard.handleGenerateMesh}
+            hasMesh={dashboard.hasMesh}
+            holeLoops={dashboard.holeLoops}
+            isMeshing={dashboard.isMeshing}
             onLogout={handleLogout}
+            outerLoop={dashboard.outerLoop}
             profile={profile}
+            pslgValidation={dashboard.pslgValidation}
           />
 
           <div className="relative flex min-h-0 flex-1 gap-3 p-3">
             <DashboardWorkspacePane
               activeTool={dashboard.activeTool}
-              cancelCurrentSketch={dashboard.cancelCurrentSketch}
-              closeCurrentShape={dashboard.closeCurrentShape}
-              deleteSelectedShape={dashboard.deleteSelectedShape}
               draftPointCount={dashboard.draftPointCount}
-              draftReadyToClose={dashboard.draftReadyToClose}
+              draftShapeMode={dashboard.draftShapeMode}
               draftStrokes={dashboard.draftStrokes}
               draftType={dashboard.draftType}
+              eraserRadius={dashboard.eraserRadius}
               geometryReady={dashboard.geometryReady}
-              handleExportMesh={dashboard.handleExportMesh}
-              handleImportSample={dashboard.handleImportSample}
               handleMouseDown={dashboard.handleMouseDown}
               handleMouseMove={dashboard.handleMouseMove}
               handleMouseUp={dashboard.handleMouseUp}
-              handleValidatePSLG={dashboard.handleValidatePSLG}
-              hasDraft={dashboard.hasDraft}
               hasMesh={dashboard.hasMesh}
               holeLoops={dashboard.holeLoops}
-              isMeshing={dashboard.isMeshing}
+              isPanningCanvas={dashboard.isPanningCanvas}
               isSketching={dashboard.isSketching}
               logs={dashboard.logs}
               meshEdges={dashboard.meshEdges}
@@ -82,12 +97,14 @@ export function Dashboard() {
               meshPreview={dashboard.meshPreview}
               mousePos={dashboard.mousePos}
               outerLoop={dashboard.outerLoop}
+              panOffset={dashboard.panOffset}
               pslgValidation={dashboard.pslgValidation}
-              removeLastStep={dashboard.removeLastStep}
+              polygonSides={dashboard.polygonSides}
               resetZoom={dashboard.resetZoom}
               selectedPoint={dashboard.selectedPoint}
-              setActiveTool={dashboard.setActiveTool}
-              setDraftType={dashboard.setDraftType}
+              setDraftShapeMode={dashboard.setDraftShapeMode}
+              setEraserRadius={dashboard.setEraserRadius}
+              setPolygonSides={dashboard.setPolygonSides}
               zoomIn={dashboard.zoomIn}
               zoomLevel={dashboard.zoomLevel}
               zoomOut={dashboard.zoomOut}
@@ -97,12 +114,8 @@ export function Dashboard() {
               <DashboardPanels
                 elementType={dashboard.elementType}
                 errorData={dashboard.errorData}
-                handleExportMesh={dashboard.handleExportMesh}
-                handleGenerateMesh={dashboard.handleGenerateMesh}
                 hasMesh={dashboard.hasMesh}
-                isMeshing={dashboard.isMeshing}
                 maxLength={dashboard.maxLength}
-                meshPreview={dashboard.meshPreview}
                 meshStats={dashboard.meshStats}
                 pslgValidation={dashboard.pslgValidation}
                 rlRatio={dashboard.rlRatio}

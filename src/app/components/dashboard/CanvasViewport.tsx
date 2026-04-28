@@ -5,6 +5,7 @@ import { cn } from "../ui/utils";
 type CanvasViewportProps = DashboardCanvasModel & {
   children?: ReactNode;
   className?: string;
+  isPanningCanvas: boolean;
   isSketching: boolean;
   onMouseDown: MouseEventHandler<HTMLCanvasElement>;
   onMouseLeave: MouseEventHandler<HTMLCanvasElement>;
@@ -15,6 +16,7 @@ type CanvasViewportProps = DashboardCanvasModel & {
 export function CanvasViewport({
   children,
   className,
+  isPanningCanvas,
   isSketching,
   onMouseDown,
   onMouseLeave,
@@ -45,8 +47,10 @@ export function CanvasViewport({
     return () => resizeObserver.disconnect();
   }, [
     model.activeTool,
+    model.draftShapeMode,
     model.draftStrokes,
     model.draftType,
+    model.eraserRadius,
     model.hasMesh,
     model.holeLoops,
     model.meshEdges,
@@ -54,6 +58,7 @@ export function CanvasViewport({
     model.meshNodes,
     model.mousePos,
     model.outerLoop,
+    model.panOffset,
     model.selectedPoint,
     model.zoomLevel,
   ]);
@@ -77,7 +82,9 @@ export function CanvasViewport({
           model.activeTool === "eraser"
             ? "cursor-none"
             : model.activeTool === "select"
-              ? "cursor-default"
+              ? isPanningCanvas
+                ? "cursor-grabbing"
+                : "cursor-grab"
               : isSketching
                 ? "cursor-crosshair"
                 : "cursor-default"

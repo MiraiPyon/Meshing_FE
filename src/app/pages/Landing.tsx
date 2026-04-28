@@ -133,7 +133,7 @@ export function Landing() {
                     <button
                       type="button"
                       aria-label="Open user menu"
-                      className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-zinc-100 transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:border-purple-400/60 hover:bg-purple-500 hover:text-white hover:shadow-[0_0_40px_rgba(37,99,235,0.5)]"
+                      className="flex h-12 w-12 items-center justify-center rounded-full border border-black bg-gradient-to-b from-blue-600 to-purple-600 text-white shadow-[0_0_30px_rgba(37,99,235,0.25)] transition-all hover:from-blue-500 hover:to-purple-500 hover:shadow-[0_0_40px_rgba(124,58,237,0.35)]"
                     >
                       <CircleUserRound className="h-6 w-6" />
                     </button>

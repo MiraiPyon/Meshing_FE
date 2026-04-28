@@ -1,7 +1,8 @@
-import { ERASER_RADIUS, POINT_RADIUS } from "../../modules/workspace/application/constants";
+import { POINT_RADIUS } from "../../modules/workspace/application/constants";
 import type { Point } from "../../modules/geometry/domain/types";
 import type { MeshEdge, MeshElement, MeshNode } from "../../modules/meshing/domain/types";
 import type {
+  DraftShapeMode,
   DraftType,
   SelectedPoint,
   Tool,
@@ -9,8 +10,10 @@ import type {
 
 export type DashboardCanvasModel = {
   activeTool: Tool;
+  draftShapeMode: DraftShapeMode;
   draftStrokes: Point[][];
   draftType: DraftType;
+  eraserRadius: number;
   hasMesh: boolean;
   holeLoops: Point[][];
   meshEdges: MeshEdge[];
@@ -18,6 +21,7 @@ export type DashboardCanvasModel = {
   meshNodes: MeshNode[];
   mousePos: Point;
   outerLoop: Point[];
+  panOffset: Point;
   selectedPoint: SelectedPoint;
   zoomLevel: number;
 };
@@ -26,8 +30,10 @@ export function renderDashboardCanvas(
   canvas: HTMLCanvasElement,
   {
     activeTool,
+    draftShapeMode,
     draftStrokes,
     draftType,
+    eraserRadius,
     hasMesh,
     holeLoops,
     meshEdges,
@@ -35,6 +41,7 @@ export function renderDashboardCanvas(
     meshNodes,
     mousePos,
     outerLoop,
+    panOffset,
     selectedPoint,
     zoomLevel,
   }: DashboardCanvasModel,
@@ -51,17 +58,27 @@ export function renderDashboardCanvas(
 
   const minorGridSpacing = Math.max(5, Math.round(20 * zoomLevel));
   const majorGridSpacing = Math.max(25, Math.round(100 * zoomLevel));
+  const transformOffsetX = panOffset.x + (width / 2) * (1 - zoomLevel);
+  const transformOffsetY = panOffset.y + (height / 2) * (1 - zoomLevel);
 
   ctx.strokeStyle = "rgba(148, 163, 184, 0.08)";
   ctx.lineWidth = 1;
-  for (let x = 0; x < width; x += minorGridSpacing) {
+  for (
+    let x = ((transformOffsetX % minorGridSpacing) + minorGridSpacing) % minorGridSpacing;
+    x < width;
+    x += minorGridSpacing
+  ) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
     ctx.stroke();
   }
 
-  for (let y = 0; y < height; y += minorGridSpacing) {
+  for (
+    let y = ((transformOffsetY % minorGridSpacing) + minorGridSpacing) % minorGridSpacing;
+    y < height;
+    y += minorGridSpacing
+  ) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(width, y);
@@ -69,14 +86,22 @@ export function renderDashboardCanvas(
   }
 
   ctx.strokeStyle = "rgba(148, 163, 184, 0.15)";
-  for (let x = 0; x < width; x += majorGridSpacing) {
+  for (
+    let x = ((transformOffsetX % majorGridSpacing) + majorGridSpacing) % majorGridSpacing;
+    x < width;
+    x += majorGridSpacing
+  ) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
     ctx.stroke();
   }
 
-  for (let y = 0; y < height; y += majorGridSpacing) {
+  for (
+    let y = ((transformOffsetY % majorGridSpacing) + majorGridSpacing) % majorGridSpacing;
+    y < height;
+    y += majorGridSpacing
+  ) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(width, y);
@@ -84,7 +109,7 @@ export function renderDashboardCanvas(
   }
 
   ctx.save();
-  ctx.translate(width / 2, height / 2);
+  ctx.translate(width / 2 + panOffset.x, height / 2 + panOffset.y);
   ctx.scale(zoomLevel, zoomLevel);
   ctx.translate(-width / 2, -height / 2);
 
@@ -97,6 +122,14 @@ export function renderDashboardCanvas(
     showHandles = false,
   ) => {
     if (points.length === 0) {
+      return;
+    }
+
+    if (points.length === 1) {
+      ctx.beginPath();
+      ctx.arc(points[0].x, points[0].y, POINT_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = strokeStyle;
+      ctx.fill();
       return;
     }
 
@@ -171,7 +204,7 @@ export function renderDashboardCanvas(
       stroke,
       draftType === "outer" ? "#38bdf8" : "#f97316",
       "transparent",
-      false,
+      draftShapeMode !== "freehand",
     );
   });
 
@@ -217,7 +250,7 @@ export function renderDashboardCanvas(
 
   if (activeTool === "eraser") {
     ctx.beginPath();
-    ctx.arc(mousePos.x, mousePos.y, ERASER_RADIUS, 0, Math.PI * 2);
+    ctx.arc(mousePos.x, mousePos.y, eraserRadius, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(248, 113, 113, 0.12)";
     ctx.fill();
     ctx.strokeStyle = "rgba(248, 113, 113, 0.9)";

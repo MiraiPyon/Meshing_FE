@@ -1,9 +1,4 @@
-import {
-  CheckCircle2,
-  Download,
-  Loader2,
-  Play,
-} from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Bar,
@@ -25,12 +20,8 @@ type DashboardPanelsProps = Pick<
   WorkspaceViewModel,
   | "elementType"
   | "errorData"
-  | "handleExportMesh"
-  | "handleGenerateMesh"
   | "hasMesh"
-  | "isMeshing"
   | "maxLength"
-  | "meshPreview"
   | "meshStats"
   | "pslgValidation"
   | "rlRatio"
@@ -125,10 +116,7 @@ function MetricRow({
 export function DashboardPanels({
   elementType,
   errorData,
-  handleExportMesh,
-  handleGenerateMesh,
   hasMesh,
-  isMeshing,
   maxLength,
   meshStats,
   pslgValidation,
@@ -232,18 +220,6 @@ export function DashboardPanels({
               ))}
             </div>
 
-            <button
-              onClick={handleGenerateMesh}
-              disabled={isMeshing}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-blue-500 disabled:opacity-60"
-            >
-              {isMeshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" fill="currentColor" />
-              )}
-              {isMeshing ? "Generating" : "Generate Mesh"}
-            </button>
           </div>
         </DashboardSection>
 
@@ -414,33 +390,6 @@ export function DashboardPanels({
             </ResponsiveContainer>
           </div>
         </DashboardSection>
-
-        <section className="p-5">
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-            <Download className="h-4 w-4" />
-            Export
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleExportMesh("dat")}
-              className="rounded-lg border border-slate-600 bg-[#07101b] px-3 py-2 text-sm text-slate-200 hover:border-blue-500/60"
-            >
-              DAT
-            </button>
-            <button
-              onClick={() => handleExportMesh("json")}
-              className="rounded-lg border border-slate-600 bg-[#07101b] px-3 py-2 text-sm text-slate-200 hover:border-blue-500/60"
-            >
-              JSON
-            </button>
-            <button
-              onClick={() => handleExportMesh("csv")}
-              className="rounded-lg border border-slate-600 bg-[#07101b] px-3 py-2 text-sm text-slate-200 hover:border-blue-500/60"
-            >
-              CSV
-            </button>
-          </div>
-        </section>
       </div>
     </aside>
   );

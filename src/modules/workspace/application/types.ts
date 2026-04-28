@@ -11,6 +11,13 @@ export type Tool = "select" | "boundary" | "hole" | "eraser";
 
 export type DraftType = "outer" | "hole";
 
+export type DraftShapeMode =
+  | "circle"
+  | "freehand"
+  | "polygon"
+  | "square"
+  | "triangle";
+
 export type SelectedPoint =
   | { type: "outer"; index: number }
   | { holeIndex: number; index: number; type: "hole" }
@@ -56,13 +63,15 @@ export type WorkspaceViewModel = {
   draftReadyToClose: boolean;
   draftStrokes: Loop[];
   draftType: DraftType;
+  draftShapeMode: DraftShapeMode;
   elementType: ElementType;
+  eraserRadius: number;
   errorData: ErrorBar[];
   generatedSegments: number;
   geometryReady: boolean;
   handleExportMesh: (format: "csv" | "dat" | "json") => void;
   handleGenerateMesh: () => void;
-  handleImportSample: () => void;
+  handleImportGeometryFile: (fileName: string, content: string) => void;
   handleMouseDown: (
     event: React.MouseEvent<HTMLCanvasElement>,
   ) => void;
@@ -75,6 +84,7 @@ export type WorkspaceViewModel = {
   holeLoops: Loop[];
   handleValidatePSLG: () => void;
   isMeshing: boolean;
+  isPanningCanvas: boolean;
   isSketching: boolean;
   logs: string[];
   maxLength: number;
@@ -84,7 +94,9 @@ export type WorkspaceViewModel = {
   meshStats: MeshStats;
   mousePos: Point;
   outerLoop: Loop;
+  panOffset: Point;
   pslgValidation: PSLGValidationState;
+  polygonSides: number;
   removeLastStep: () => void;
   resetGeometry: () => void;
   resetZoom: () => void;
@@ -92,8 +104,11 @@ export type WorkspaceViewModel = {
   selectedPoint: SelectedPoint;
   setActiveTool: (tool: Tool) => void;
   setDraftType: (draftType: DraftType) => void;
+  setDraftShapeMode: (mode: DraftShapeMode) => void;
   setElementType: (elementType: ElementType) => void;
+  setEraserRadius: (value: number) => void;
   setMaxLength: (value: number) => void;
+  setPolygonSides: (value: number) => void;
   setRlRatio: (value: number) => void;
   setThetaMin: (value: number) => void;
   thetaMin: number;
