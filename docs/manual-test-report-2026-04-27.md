@@ -44,3 +44,15 @@ Release target: Meshing 2D FE/BE submission build.
 - PostgreSQL enum upgrade guard adds `TRIANGLE` automatically during `init_db()` for old local databases.
 - Canvas-scale sketch meshing now scales frontend `maxLength` before calling the backend, while backend density logic keeps small `shape.dat` models refined by `resolution`.
 - Current native Delaunay path is correct but slower than the previous SciPy path; full backend suite completed in 66.81s on this machine.
+
+## Release Accuracy Addendum - 2026-04-28
+
+| Check | Command / Scenario | Result | Notes |
+|---|---|---:|---|
+| Backend regression | `.venv/bin/python -m pytest -q` | PASS | 108 passed, 1 skipped |
+| Backend lint | `.venv/bin/ruff check app tests scripts` | PASS | All checks passed |
+| Frontend typecheck | `npm run typecheck` | PASS | TypeScript clean |
+| Frontend build | `npm run build` | PASS | Vite production build completed |
+| Cantilever benchmark | `.venv/bin/python scripts/run_cantilever_benchmark.py` | PASS | Q4 refined tip error 8.97%; T3 Delaunay solver validity PASS |
+
+Accuracy evidence is stored in `Meshing_BE/docs/cantilever-benchmark-report-2026-04-28.md` and `Meshing_BE/docs/cantilever-benchmark-2026-04-28.csv`.

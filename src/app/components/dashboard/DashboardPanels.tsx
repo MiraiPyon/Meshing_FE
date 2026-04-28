@@ -308,7 +308,7 @@ export function DashboardPanels({
         </h3>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {(["rectangle", "circle", "triangle", "polygon"] as const).map((type) => (
               <button
                 key={type}
@@ -1052,6 +1052,29 @@ export function DashboardPanels({
                 <div>Sum Ry</div>
                 <div>{(feaSummary.sumReactionY ?? 0).toExponential(3)}</div>
               </div>
+              {feaSummary.cantileverBenchmark ? (
+                <div className="mt-3 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-2">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">
+                    Cantilever Benchmark
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px]">
+                    <div>tip uy avg</div>
+                    <div>{feaSummary.cantileverBenchmark.tipUyAvg.toExponential(3)}</div>
+                    <div>Euler tip</div>
+                    <div>{feaSummary.cantileverBenchmark.eulerTipDeflection.toExponential(3)}</div>
+                    <div>ratio/Euler</div>
+                    <div>
+                      {feaSummary.cantileverBenchmark.ratioToEuler === null
+                        ? "n/a"
+                        : feaSummary.cantileverBenchmark.ratioToEuler.toFixed(3)}
+                    </div>
+                    <div>force balance</div>
+                    <div>
+                      {(feaSummary.cantileverBenchmark.forceBalanceError ?? 0).toExponential(3)}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

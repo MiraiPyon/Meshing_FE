@@ -50,6 +50,55 @@ import type { GeometryResponse } from "../../../services/apiClient";
 
 const CIRCLE_SEGMENT_COUNT = 64;
 
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function parseCantileverBenchmark(payload: Record<string, unknown> | null | undefined) {
+  if (!payload) {
+    return null;
+  }
+
+  const length = finiteNumber(payload.length);
+  const height = finiteNumber(payload.height);
+  const thickness = finiteNumber(payload.thickness);
+  const totalVerticalLoad = finiteNumber(payload.total_vertical_load);
+  const tipUyAvg = finiteNumber(payload.tip_uy_avg);
+  const tipUyMin = finiteNumber(payload.tip_uy_min);
+  const tipUyMax = finiteNumber(payload.tip_uy_max);
+  const eulerTipDeflection = finiteNumber(payload.euler_tip_deflection);
+  const timoshenkoTipDeflection = finiteNumber(payload.timoshenko_tip_deflection);
+
+  if (
+    length === null ||
+    height === null ||
+    thickness === null ||
+    totalVerticalLoad === null ||
+    tipUyAvg === null ||
+    tipUyMin === null ||
+    tipUyMax === null ||
+    eulerTipDeflection === null ||
+    timoshenkoTipDeflection === null
+  ) {
+    return null;
+  }
+
+  return {
+    length,
+    height,
+    thickness,
+    totalVerticalLoad,
+    tipUyAvg,
+    tipUyMin,
+    tipUyMax,
+    eulerTipDeflection,
+    timoshenkoTipDeflection,
+    ratioToEuler: finiteNumber(payload.ratio_to_euler),
+    ratioToTimoshenko: finiteNumber(payload.ratio_to_timoshenko),
+    forceBalanceError: finiteNumber(payload.force_balance_error),
+  };
+}
+
 function isEditableKeyboardTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -1258,6 +1307,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
           sumReactionY: response.result.sum_reaction_y ?? null,
           nodeCount: response.result.node_count,
           elementCount: response.result.element_count,
+          cantileverBenchmark: parseCantileverBenchmark(response.result.cantilever_benchmark),
         });
         addLog(
           `[FEA] Solved. max|u|=${response.result.max_displacement.toExponential(3)}, max_vm=${response.result.max_von_mises_stress.toExponential(3)}.`,

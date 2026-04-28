@@ -56,6 +56,22 @@ export type QuickFEASummary = {
   sumReactionY: number | null;
   nodeCount: number;
   elementCount: number;
+  cantileverBenchmark: QuickFEABenchmark | null;
+};
+
+export type QuickFEABenchmark = {
+  length: number;
+  height: number;
+  thickness: number;
+  totalVerticalLoad: number;
+  tipUyAvg: number;
+  tipUyMin: number;
+  tipUyMax: number;
+  eulerTipDeflection: number;
+  timoshenkoTipDeflection: number;
+  ratioToEuler: number | null;
+  ratioToTimoshenko: number | null;
+  forceBalanceError: number | null;
 };
 
 export type Tool = "select" | "boundary" | "hole" | "eraser";

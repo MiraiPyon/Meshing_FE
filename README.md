@@ -1,217 +1,77 @@
 # Meshing_FE
 
-Frontend cho nền tảng Web mô phỏng **Meshing 2D đa phương thức** và **Dashboard quản lý chất lượng phần tử hữu hạn**.
+React/Vite frontend for the Meshing 2D platform. It provides the interactive canvas, geometry primitive forms, mesh configuration, quality dashboard, project snapshots, export actions, and Quick FEA workflow.
 
----
+## Capabilities
 
-## Tính năng
-
-### Khởi tạo mô hình hình học
-- **Vẽ tay tự do (Sketch → PSLG)**: vẽ outer boundary và holes trực tiếp trên canvas
-- **Select & Drag**: chọn và kéo điểm để chỉnh hình
-- **Eraser**: cắt bỏ draft strokes
-- **Undo/Reset**: quay lại thao tác hoặc xóa toàn bộ workspace
-- Tự động chuẩn hóa orientation (CCW cho outer, CW cho holes)
-
-### Động cơ chia lưới
-- **T3** (Tam giác 3 nút) — Delaunay triangulation qua Backend
-- **Q4** (Tứ giác 4 nút) — Structured grid qua Backend
-- Hỗ trợ **polygon có holes** (lỗ thủng)
-- Cấu hình: Min Angle, R/L Ratio, Grid Spacing, nx×ny
-- **Fallback**: nếu chưa đăng nhập, dùng local preview mesh
-
-### Dashboard phân tích chất lượng
-- **Topology Snapshot**: Nodes, Edges, Elements, DOF
-- **Distribution Preview**: biểu đồ phân bố kích thước phần tử (Recharts)
-- **Execution Time**: thời gian tạo lưới
-- **Console log**: hiển thị quá trình meshing real-time
-
-### Quản lý dự án & Xuất dữ liệu
-- **Export**: JSON / DAT / CSV / CSV_ZIP / SHAPE — download trực tiếp từ Dashboard
-- **Project Snapshots**: save, refresh, load, delete theo user
-- **shape.dat Meshing**: nhập trực tiếp `shape.dat` để backend sinh lưới
-- **Quick FEA**: chạy nhanh bài toán cantilever để kiểm tra nghiệm sơ bộ
-- **Auth**: Google OAuth2 → JWT, auto-refresh khi token hết hạn
-- **Logout**: revoke refresh token trên Backend
-
----
+- Sketch workspace: draw outer boundaries and holes, close shapes, select/move points, pan, wheel zoom, undo one step, reset geometry.
+- Geometry primitive forms: rectangle, circle, triangle, polygon CRUD through backend geometry endpoints.
+- Meshing controls: T3 Delaunay and Q4 mapped mesh, `theta_min`, `r/l`, maximum edge length, and Q4 `nx/ny`.
+- Dashboard: topology counts, DOF, backend quality metrics, distribution chart, connectivity matrix previews, console log.
+- Project and export flow: save/load/delete snapshots, export `json`, `dat`, `csv`, `csv_zip`, and `shape`.
+- Quick FEA: detects cantilever edges, sends material/load/BC to backend, and displays solver summary plus benchmark payload when available.
 
 ## Quick Start
 
 ```bash
-# 1. Cài dependencies
 npm install
-
-# 2. Tạo .env
 cp .env.example .env
-# Sửa VITE_GOOGLE_CLIENT_ID với Google Client ID của bạn
-
-# 3. Chạy dev server
+# Edit VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_REDIRECT_URI
 npm run dev
 ```
 
-Mở: `http://localhost:5173`
+App URL: `http://localhost:5173`
 
-> **Lưu ý**: Cần chạy Backend (`Meshing_BE`) để có đầy đủ tính năng (mesh generation, export, auth).
+Backend must be running at the configured API base URL for auth, persistence, meshing, export, snapshots, and FEA.
 
----
+## Environment
 
-## Cấu trúc thư mục
-
-```
-src/
-├── app/
-│   ├── components/
-│   │   ├── auth/                    # LogoutConfirmDialog
-│   │   ├── dashboard/               # Header, Sidebar, Panels, Canvas, Footer
-│   │   ├── landing/                 # Landing page components
-│   │   └── ui/                      # Skeleton, Dialog, etc.
-│   ├── pages/
-│   │   ├── AuthCallback.tsx         # Google OAuth callback → JWT
-│   │   ├── Dashboard.tsx            # Main workspace
-│   │   ├── Landing.tsx              # Landing page
-│   │   └── Login.tsx                # Login page
-│   ├── App.tsx
-│   └── routes.ts
-├── hooks/
-│   └── useMeshAPI.ts                # Backend mesh integration hook
-├── infrastructure/
-│   ├── auth/
-│   │   └── local-storage-auth.ts    # Token management (access, refresh, profile)
-│   └── canvas/
-│       └── coordinates.ts           # Screen → canvas coordinate transform
-├── modules/
-│   ├── analysis/                    # DOF, mesh stats, quality distribution
-│   ├── geometry/                    # Point, Loop, PSLG, orientation, point-in-polygon
-│   ├── meshing/                     # Preview refinement, strategy pattern (T3/Q4)
-│   └── workspace/                   # State machine, commands, selectors
-├── services/
-│   └── apiClient.ts                 # Full API client (auth, geometry, mesh, FEA, export)
-├── store/
-│   └── meshStore.ts                 # Mesh ID state (geometry_id, mesh_id)
-└── styles/
-```
-
----
-
-## Kiến trúc & Design Patterns
-
-| Pattern | Ở đâu |
-|---------|-------|
-| **Layered Architecture** | `app/` → `modules/` → `infrastructure/` |
-| **Strategy Pattern** | `T3MeshingStrategy` / `Q4MeshingStrategy` |
-| **State Machine** | `workspace-machine.ts` — mode transitions |
-| **Command Pattern** | `close-shape`, `undo`, `move-point`, `erase-stroke` |
-| **Facade/ViewModel** | `useDashboardWorkspace()` — gom toàn bộ state |
-| **Observer** | React state updates → Dashboard panels re-render |
-| **Factory** | `getMeshingStrategy(elementType)` |
-
----
-
-## Auth Flow (Google OAuth2 → JWT)
-
-```
-[Login page] ──redirect──▶ [Google OAuth]
-                                │
-                    redirect back to /auth/callback?code=xxx
-                                │
-              POST /api/auth/callback {code, redirect_uri}
-                                │
-              ◀── {access_token, refresh_token}
-                                │
-              localStorage: access_token, refresh_token, profile
-                                │
-[Dashboard] ── all API calls use Bearer token ──▶ [Backend]
-                                │
-              auto-refresh on 401 using refresh_token
-```
-
----
-
-## API Integration
-
-Frontend gọi Backend qua `src/services/apiClient.ts`:
-
-| Category | Methods |
-|----------|---------|
-| **Auth** | `exchangeAuthCode`, `getMe`, `logout` |
-| **Geometry** | `createRectangle`, `createCircle`, `createPolygon`, `getGeometry`, `listGeometries`, `deleteGeometry`, `booleanOperation` |
-| **Mesh** | `createMeshFromSketch`, `createMeshFromShapeDat`, `createDelaunayMesh`, `createQuadMesh`, `getMesh`, `listMeshes`, `deleteMesh`, `exportMesh` |
-| **Projects** | `createProject`, `listProjects`, `getProject`, `updateProject`, `deleteProject` |
-| **Health** | `health`, `healthDb` |
-| **FEA** | `solveFEA` |
-| **Realtime** | `connectDashboardWebSocket` |
-
-Auto-refresh: khi nhận HTTP 401, tự động gọi `/api/auth/refresh` rồi retry request.
-
----
-
-## Mesh Generation Flow
-
-```
-[User draws shape OR imports shape.dat] → Generate Mesh
-                                                   │
-                                    ┌── Logged in? ─┤
-                                    │               │
-                               [Backend]       [Local preview]
-                                    │               │
-       POST /api/mesh/from-sketch or /api/mesh/from-shape-dat
-                                    │               │
-                        BE returns nodes[]         FE sampling
-                        + elements[]              + neighbor edges
-                                    │               │
-                              ┌─────┴─────┐         │
-                              ▼           ▼         ▼
-                        Canvas render   Stats    Canvas render
-```
-
----
-
-## Dashboard Controls mới
-
-- **shape.dat Meshing**: nhập text `OUTER/HOLE/END`, generate trực tiếp từ backend
-- **Project Snapshots**: Save/Refresh/Load/Delete snapshot theo tài khoản
-- **Quick FEA**: nhập vật liệu + tải tổng, chạy solver nhanh cho kiểm tra ban đầu
-- **Realtime Console**: nhận sự kiện `/api/ws/dashboard` (`mesh_created`) và log trong dashboard
-
----
-
-## Scripts
-
-```bash
-npm run dev          # Dev server (Vite)
-npm run build        # Production build
-npm run typecheck    # TypeScript check
-npm run build:pages  # Build for GitHub Pages
-npm run ci:check     # Full CI check
-```
-
----
-
-## Biến môi trường
+Common local `.env` values:
 
 ```env
 VITE_BASE_PATH=/
-VITE_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 VITE_GOOGLE_REDIRECT_URI=http://localhost:5173/auth/callback
+VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
----
+Never commit real `.env` files.
 
-## Công nghệ
+## Validation Commands
 
-- React 18 + TypeScript
-- Vite 6
-- React Router 7
-- Tailwind CSS 4
-- Recharts (biểu đồ)
-- Radix UI (dialogs)
-- Motion (animations)
-- Lucide React (icons)
-- HTML Canvas API (mesh rendering)
+```bash
+npm run typecheck
+npm run build
+```
 
----
+Recommended full release check with backend:
 
-## License
+1. Start backend and database.
+2. Start frontend dev server.
+3. Login or use a local test token in a controlled dev environment.
+4. Run through: primitive/draw -> mesh T3/Q4 -> snapshot -> Quick FEA -> export all formats.
+5. Check backend benchmark report: `../Meshing_BE/docs/cantilever-benchmark-report-2026-04-28.md`.
 
-MIT
+## Main Source Layout
+
+```txt
+src/app/           pages and dashboard UI components
+src/hooks/         backend API orchestration hooks
+src/infrastructure auth/canvas utilities
+src/modules/       geometry, meshing, analysis, workspace domain logic
+src/services/      API client and wire contracts
+src/store/         mesh/geometry id store
+src/styles/        global styling
+```
+
+## API Integration Notes
+
+- Auth uses Google OAuth callback -> backend JWT -> local token storage.
+- All protected backend calls use bearer tokens and retry once after refresh on `401`.
+- Geometry primitive forms map directly to backend rectangle/circle/triangle/polygon endpoints.
+- Mesh preview renders backend nodes/elements and dashboard metrics when available.
+- Quick FEA uses the current backend mesh id; generate or load a mesh before running it.
+
+## GitHub Hygiene
+
+Commit source, docs, and `.env.example`. Do not commit `node_modules`, `dist`, local `.env`, logs, caches, or TypeScript build info.
