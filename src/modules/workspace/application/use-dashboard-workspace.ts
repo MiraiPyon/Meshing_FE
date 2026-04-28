@@ -47,8 +47,19 @@ import type { ElementType } from "../../meshing/domain/types";
 import { useMeshAPI } from "../../../hooks/useMeshAPI";
 import { meshStore } from "../../../store/meshStore";
 import type { GeometryResponse } from "../../../services/apiClient";
+import { clearAuthentication } from "../../../infrastructure/auth/local-storage-auth";
 
 const CIRCLE_SEGMENT_COUNT = 64;
+
+function isAuthTokenError(message: string): boolean {
+  const normalized = message.trim().toLowerCase();
+  return (
+    normalized.includes("invalid or expired token") ||
+    normalized.includes("not authenticated") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("http 401")
+  );
+}
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -297,6 +308,7 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
 
   const draftStrokesRef = useRef<Point[][]>(draftStrokes);
   const panDragStartRef = useRef<{ screen: Point; offset: Point } | null>(null);
+  const sessionExpiredNotifiedRef = useRef(false);
 
   useEffect(() => {
     draftStrokesRef.current = draftStrokes;
@@ -340,6 +352,19 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
   const clearMeshPreview = () => {
     setMeshPreview(null);
     setFeaSummary(null);
+  };
+
+  const handleExpiredSession = () => {
+    clearAuthentication();
+    setGeometryError(null);
+    setGeometryRecords([]);
+    setProjectSnapshots([]);
+    setSelectedGeometryId(null);
+
+    if (!sessionExpiredNotifiedRef.current) {
+      addLog("Session expired. Please log in again.");
+      sessionExpiredNotifiedRef.current = true;
+    }
   };
 
   const addLog = (message: string) => {
@@ -940,6 +965,10 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       .catch((err: unknown) => {
         const message =
           err instanceof Error ? err.message : "Cannot fetch geometry records.";
+        if (isAuthTokenError(message)) {
+          handleExpiredSession();
+          return;
+        }
         setGeometryError(message);
         addLog(`[Geometry Error] ${message}`);
       })
@@ -1136,6 +1165,10 @@ export function useDashboardWorkspace(): WorkspaceViewModel {
       })
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : "Cannot fetch project snapshots";
+        if (isAuthTokenError(msg)) {
+          handleExpiredSession();
+          return;
+        }
         addLog(`[Project Error] ${msg}`);
       })
       .finally(() => {
